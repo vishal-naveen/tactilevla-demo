@@ -1,0 +1,39 @@
+:root {
+  --wall: #0c1626;
+  --wall-2: #060b15;
+  --ivory: #f4ecd8;
+  --dim: #a3b3c6;
+  --noodle: #ffc93c;
+  --trained: #2fe0c2;
+  --held: #ff7a1a;
+
+  /* Derived tokens. js/ui/theme.js recomputes these for the active theme; these are the nocturne defaults
+     so the page is right before (or without) JS. `--*-rgb` are bare "r, g, b" for use in rgba(). */
+  --wall-rgb: 12, 22, 38; --wall-2-rgb: 6, 11, 21; --ivory-rgb: 244, 236, 216; --dim-rgb: 163, 179, 198;
+  --noodle-rgb: 255, 201, 60; --trained-rgb: 47, 224, 194; --held-rgb: 255, 122, 26;
+  --veil-rgb: 6, 11, 21;            /* scrims, pills, panel veils: the page background, whatever its hue */
+  --shadow-rgb: 0, 0, 0; --shadow-a: 0.9; --shadow: rgba(var(--shadow-rgb), var(--shadow-a));
+  --on-accent: #060b15;              /* text on --noodle fills */
+  --accent-text: #ffc93c; --held-text: #ff7a1a; --trained-text: #2fe0c2;   /* accents safe to use as text */
+  --ring-color: #ffc27a; --ring-rgb: 255, 194, 122;
+  --glow-a: 0.5; --grain-a: 0.055;
+  --hair: rgba(var(--ivory-rgb), 0.16);
+  --hair-strong: rgba(var(--ivory-rgb), 0.34);
+  --caption: rgba(var(--ivory-rgb), 0.74);
+  --seg-idle: rgba(var(--ivory-rgb), 0.78);
+  --media-ink: #f3ead6;              /* icons and labels drawn over video, which is always dark */
+
+  --gutter: clamp(16px, 6.5vw, 8rem);
+  --col: min(34rem, 41vw);
+  --wide: min(42rem, 41vw);
+  --topbar-h: 4.25rem;
+  --space-section: clamp(4rem, 8vw, 6rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --fs-body: 1.0625rem;
+  --fs-h2: clamp(2rem, 3.5vw, 3.35rem);
+  --fs-small: 0.9375rem;
+  --fs-caption: 0.8125rem;
+  --fs-micro: 0.75rem;
+}

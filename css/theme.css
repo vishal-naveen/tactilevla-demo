@@ -1,0 +1,91 @@
+/* Palette-aware finish: luminous type moments, richer buttons and chips, grain, the review switcher.
+   Everything here reads tokens (see css/tokens.css and js/ui/theme.js), so it re-tints with the theme.
+   Restraint: one luminous moment per screen. */
+
+/* Film grain tied to the theme (a static tile, no blend mode, so it costs nothing per frame) */
+.grain {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: var(--grain-a);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+}
+@media (prefers-reduced-motion: reduce) { .grain { opacity: calc(var(--grain-a) * 0.6); } }
+
+/* Buttons: a lit primary, a crisp secondary */
+.btn--primary {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 55%), var(--noodle);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 10px 34px -10px rgba(var(--noodle-rgb), calc(var(--glow-a) + 0.2));
+}
+.btn--ghost { background: rgba(var(--ivory-rgb), 0.04); box-shadow: inset 0 0 0 1px rgba(var(--ivory-rgb), 0.5); }
+.btn--ghost:hover { background: rgba(var(--ivory-rgb), 0.1); box-shadow: inset 0 0 0 1px var(--ivory); }
+.seg-btn[aria-pressed="true"] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 55%), var(--noodle);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 22px -8px rgba(var(--noodle-rgb), calc(var(--glow-a) + 0.15));
+}
+
+/* Arm: the one luminous moment is the cost stat */
+.stat-n {
+  background: linear-gradient(100deg, var(--noodle) 15%, var(--held) 95%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(0 0 30px rgba(var(--noodle-rgb), calc(var(--glow-a) * 0.7)));
+}
+
+/* Data: the counter carries the accent; its rule and the stat hairlines pick it up */
+.counter-n { color: var(--accent-text); text-shadow: 0 0 34px rgba(var(--noodle-rgb), calc(var(--glow-a) * 0.7)); }
+.counter { border-top: 1px solid transparent; border-image: linear-gradient(90deg, rgba(var(--noodle-rgb), 0.75), rgba(var(--ivory-rgb), 0.12) 70%) 1; }
+.stats > div { border-left-color: rgba(var(--noodle-rgb), 0.5); }
+.closing { color: var(--held-text); text-shadow: 0 0 44px rgba(var(--held-rgb), calc(var(--glow-a) * 0.8)); }
+
+/* Test: B2 in the held-out colour, lit from above */
+.giant-cell {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 32%),
+    linear-gradient(180deg, var(--held) 34%, rgba(var(--held-rgb), 0.42));
+  -webkit-background-clip: text; background-clip: text;
+  filter: drop-shadow(0 0 38px rgba(var(--held-rgb), calc(var(--glow-a) * 0.75)));
+}
+
+/* Results: numerals wash from ink to the accent; filled trials glow softly */
+.results-title {
+  background: linear-gradient(180deg, var(--ivory) 30%, var(--accent-text) 140%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(0 0 32px rgba(var(--noodle-rgb), calc(var(--glow-a) * 0.35)));
+}
+.row-score .num { color: var(--accent-text); }
+.dot.is-hit { box-shadow: 0 0 12px rgba(var(--noodle-rgb), calc(var(--glow-a) * 0.9)); }
+.range { background: linear-gradient(90deg, rgba(var(--noodle-rgb), 0.55), rgba(var(--noodle-rgb), 0.85)); }
+
+/* Film: saturated chips */
+.tag--held { background: rgba(var(--held-rgb), 0.18); box-shadow: inset 0 0 0 1px var(--held); }
+.tag--trained { background: rgba(var(--trained-rgb), 0.18); box-shadow: inset 0 0 0 1px rgba(var(--trained-rgb), 0.9); }
+
+/* Touch: the peak bar burns brighter; the roadmap lights its done and next steps */
+.bars li[style*="--v:152"] .b-bar i { background: linear-gradient(90deg, var(--noodle), var(--held)); box-shadow: 0 0 16px rgba(var(--noodle-rgb), calc(var(--glow-a) * 0.7)); }
+.roadmap .is-done::before { box-shadow: 0 0 10px rgba(var(--trained-rgb), 0.75); }
+.roadmap .is-next { border-top-color: rgba(var(--noodle-rgb), 0.6); }
+.roadmap .is-next .ph-t { font-weight: 600; }
+.roadmap .is-next::before { box-shadow: 0 0 0 4px rgba(var(--noodle-rgb), 0.22), 0 0 16px rgba(var(--noodle-rgb), 0.6); }
+
+/* Sandbox tiles glow on hover */
+.cell-btn:hover:not([aria-disabled="true"]) { box-shadow: inset 0 0 0 1px rgba(var(--trained-rgb), 0.9), 0 0 20px -4px rgba(var(--trained-rgb), 0.55); }
+.cell-btn--held:hover:not([aria-disabled="true"]) { box-shadow: inset 0 0 0 1px var(--held), 0 0 20px -4px rgba(var(--held-rgb), 0.6); }
+
+/* Progress rail: accent gradient with a faint glow; ticks in the accent */
+.rail i { background: linear-gradient(to bottom, var(--noodle), var(--held)); box-shadow: 0 0 10px rgba(var(--noodle-rgb), 0.55); opacity: 1; }
+.rail b { background: rgba(var(--noodle-rgb), 0.55); }
+.strip-progress i { background: linear-gradient(90deg, var(--noodle), var(--held)); }
+
+/* Review switcher (?themes) */
+.theme-switcher {
+  position: fixed; left: var(--gutter); bottom: calc(env(safe-area-inset-bottom, 0px) + 3.6rem); z-index: 40;
+  display: flex; gap: 0.25rem; padding: 0.3rem; border-radius: 999px;
+  background: rgba(var(--veil-rgb), 0.82); box-shadow: 0 0 0 1px var(--hair-strong), 0 12px 32px -12px var(--shadow);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.theme-switcher button { display: flex; align-items: center; gap: 0.45rem; min-height: 2.25rem; padding: 0 0.8rem 0 0.4rem; border-radius: 999px; font-size: var(--fs-micro); color: var(--ivory); }
+.theme-switcher button[aria-pressed="true"] { background: rgba(var(--ivory-rgb), 0.14); box-shadow: inset 0 0 0 1px var(--hair-strong); }
+.theme-switcher i { width: 1.25rem; height: 1.25rem; border-radius: 50%; box-shadow: 0 0 0 1px rgba(var(--ivory-rgb), 0.35); }
+@media (max-width: 820px) { .theme-switcher { left: 0.5rem; right: 0.5rem; justify-content: space-between; bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem); } .theme-switcher button { padding-right: 0.55rem; } }
+
+/* Gradient-clipped type has a transparent fill: the inherited panel text-shadow would show through it and muddy the colour */
+.stat-n, .results-title, .giant-cell, .results-title span { text-shadow: none; }
+.results-title { background: linear-gradient(180deg, var(--ivory) 0%, var(--ivory) 30%, var(--accent-text) 125%); -webkit-background-clip: text; background-clip: text; }

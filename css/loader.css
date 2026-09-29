@@ -1,0 +1,18 @@
+.loader {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-content: center; justify-items: center; gap: 1.1rem;
+  background: var(--wall-2);
+}
+.loader-ring { width: 11rem; height: 11rem; overflow: visible; will-change: transform, opacity; }
+.loader-ring circle { fill: none; transform: rotate(-90deg); transform-origin: 60px 60px; }
+.loader-track { stroke: rgba(var(--ring-rgb), 0.14); stroke-width: 2.5; }
+.loader-fill {
+  stroke: var(--ring-color); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 326.73; stroke-dashoffset: 326.73;
+  filter: drop-shadow(0 0 3px rgba(var(--ring-rgb), 0.75)) drop-shadow(0 0 9px rgba(var(--ring-rgb), 0.45));
+}
+.loader-word { font-stretch: 125%; font-weight: 760; font-size: 1.05rem; letter-spacing: -0.005em; color: var(--ivory); margin-top: 0.4rem; }
+.loader-pct { font-size: var(--fs-caption); color: var(--dim); font-variant-numeric: tabular-nums; min-width: 3ch; text-align: center; margin-top: -0.6rem; }
+/* Pre-reveal states so nothing flashes before the orchestrated entrance */
+.is-loading .hero-title .line > span { transform: translateY(118%); }
+.is-loading .hero-fade { opacity: 0; }
+.hero-title .line { display: block; overflow: hidden; padding-bottom: 0.18em; margin-bottom: -0.18em; }
+.hero-title .line > span { display: block; will-change: transform; }
