@@ -62,9 +62,26 @@ export async function createStage(canvas, { onLoadProgress = () => {}, theme = D
     h: Math.max(1, Math.round(canvas.clientHeight || parent.clientHeight || window.innerHeight)),
   })
   let { w, h } = size()
-  const low = Math.min(window.innerWidth, window.innerHeight) < 700 || (navigator.hardwareConcurrency || 8) <= 4
-  const dprCap = low ? 1.25 : 1.4
-  let dpr = Math.min(window.devicePixelRatio || 1, dprCap)
+  // Quality policy. Touch devices (phones, iPads) are NOT "low end": Apple GPUs are strong and a soft picture is the worse
+  // failure, so they get the full pipeline (2x MSAA, 2048 VSM shadows, no 30 fps cap) at a resolution set by a pixel budget
+  // rather than a blanket low DPR cap. `weak` is only for genuinely small hardware (<= 2 cores / <= 2 GB); anything else
+  // that turns out slow is handled by the governor (and, at its floor, by onStruggle).
+  const touch = matchMedia('(pointer: coarse)').matches || matchMedia('(hover: none)').matches
+  const weak = (navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 2
+  const low = weak // FXAA instead of MSAA, 1024 shadows
+  let capAmbient = weak // 30 fps ambient chapters; also switched on if the governor bottoms out
+  const screenDpr = () => window.devicePixelRatio || 1
+  // Laptop/desktop: DPR 1.4 (unchanged). Touch: up to 2 (DPR 3 costs 2.25x the pixels for detail nobody can see), trimmed so
+  // the drawing buffer stays within ~2.6 MP, the same as the laptop (an iPad at DPR 2 is 3.9 MP), and never under 1.5 on a DPR >= 2 screen.
+  const PIXEL_BUDGET = 2.6e6
+  const dprMax = () => {
+    if (weak) return Math.min(screenDpr(), 1.25)
+    if (!touch) return Math.min(screenDpr(), 1.4)
+    const cap = Math.min(screenDpr(), 2)
+    return Math.max(Math.min(cap, 1.5), Math.min(cap, Math.sqrt(PIXEL_BUDGET / (w * h))))
+  }
+  const dprFloor = () => (touch && screenDpr() >= 2 ? 1.5 : 1)
+  let dpr = dprMax()
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' })
   renderer.setPixelRatio(dpr)
@@ -171,7 +188,7 @@ export async function createStage(canvas, { onLoadProgress = () => {}, theme = D
   const P = createParams(MODES.hero)
   const params = P.v
   const dollies = createDollies(camRig)
-  const governor = createGovernor({ max: dpr, onChange: (d) => applyDpr(d) })
+  const governor = createGovernor({ max: dpr, floor: dprFloor(), onChange: (d) => applyDpr(d), onStruggle: () => { capAmbient = true } })
   let gateAt = 0
   let activeCell = null
   let lastRender = null
@@ -388,7 +405,7 @@ export async function createStage(canvas, { onLoadProgress = () => {}, theme = D
     let dt = Math.min(0.25, Math.max(0, (now - last) / 1000))
     last = now
     acc += dt
-    const cap30 = mode.ambient && low // battery-friendly 30 fps only for ambient chapters on small/weak devices
+    const cap30 = mode.ambient && capAmbient // battery-friendly 30 fps only for ambient chapters on small/weak devices
     if (cap30 && acc < 1 / 30 - 0.002) return
     dt = acc
     acc = 0
@@ -416,7 +433,7 @@ export async function createStage(canvas, { onLoadProgress = () => {}, theme = D
     const s = size()
     if (s.w === w && s.h === h) return
     w = s.w; h = s.h
-    governor.setMax(Math.min(window.devicePixelRatio || 1, dprCap))
+    governor.setMax(dprMax())
     renderer.setPixelRatio(governor.dpr)
     renderer.setSize(w, h, false)
     fx.setSize(w, h)

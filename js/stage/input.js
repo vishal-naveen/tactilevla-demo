@@ -20,6 +20,11 @@ export function createInput({ canvas, camera, grid, camRig, getChapter, onClick,
   controls.minAzimuthAngle = Math.PI / 2 - 1.1
   controls.maxAzimuthAngle = Math.PI / 2 + 1.1
   controls.rotateSpeed = 0.6
+  // OrbitControls writes an inline `touch-action: none` on the canvas, which beats the stylesheet's `pan-y`.
+  // On iPad the canvas is exposed beside the text panels, so every touch that started on it was swallowed
+  // and the page could not scroll. Keep vertical panning native (horizontal drags and pinch still orbit/zoom).
+  const keepScrollable = () => { canvas.style.touchAction = 'pan-y' }
+  keepScrollable()
   let active = false // controls currently own the camera
   let down = null
   let hoverOn = false
@@ -79,6 +84,7 @@ export function createInput({ canvas, camera, grid, camRig, getChapter, onClick,
       controls.maxDistance = Math.max(1.5, camera.position.distanceTo(look) * 1.5)
       controls.target.copy(look)
       controls.enabled = true
+      keepScrollable()
       controls.update()
       active = true
     },
