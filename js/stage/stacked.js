@@ -9,3 +9,9 @@ export const isStacked = (w, h) => w <= STACK_MAX_W || (h >= w && w <= STACK_POR
 // landscape phone (600-820 wide, ~400 tall) stays on the phone sizes.
 export const TABLET_STACKED_QUERY = '(min-width: 600px) and (max-width: 820px) and (min-height: 700px), (orientation: portrait) and (min-width: 821px) and (max-width: 1100px)'
 export const isTabletStacked = (w, h) => isStacked(w, h) && w >= 600 && h >= 700
+
+// The owner's iPad: landscape 11-inch tablets (1180x820 / 1180x796 CSS px, aspect ~1.44-1.48) as a Home Screen app. The side layout is
+// tight there (text column ~620 px, scene ~520 px), so the stage tunes its framing, camera lean and phase words for exactly this range.
+// CSS mirror: IPAD_LANDSCAPE_QUERY (css/tour.css). Desktop (>= 1300 px wide) and phones are untouched.
+export const IPAD_LANDSCAPE_QUERY = '(min-width: 1100px) and (max-width: 1290px) and (min-height: 700px) and (max-height: 900px)'
+export const isIpadLandscape = (w, h) => w >= 1100 && w <= 1290 && h >= 700 && h <= 900

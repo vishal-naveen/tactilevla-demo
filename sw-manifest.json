@@ -151,9 +151,9 @@
    "tier": "shell"
   },
   {
-   "hash": "cea2b2860140d0219b19",
+   "hash": "5fc774ad5acc5e7f5b38",
    "path": "css/tour.css",
-   "size": 5559,
+   "size": 8238,
    "tier": "shell"
   },
   {
@@ -205,9 +205,9 @@
    "tier": "shell"
   },
   {
-   "hash": "2098aecd67ede506b7cf",
+   "hash": "421663d396497db69757",
    "path": "js/stage/dolly.js",
-   "size": 1849,
+   "size": 2275,
    "tier": "shell"
   },
   {
@@ -223,9 +223,9 @@
    "tier": "shell"
   },
   {
-   "hash": "8eb99eb12369ebbb1309",
+   "hash": "581cc62a7c676bd521c2",
    "path": "js/stage/framing.js",
-   "size": 5255,
+   "size": 5558,
    "tier": "shell"
   },
   {
@@ -307,9 +307,9 @@
    "tier": "shell"
   },
   {
-   "hash": "290dcd45f96313c029a0",
+   "hash": "4e044472d02fdb99ca46",
    "path": "js/stage/phasemarkers.js",
-   "size": 37728,
+   "size": 38197,
    "tier": "shell"
   },
   {
@@ -385,9 +385,9 @@
    "tier": "shell"
   },
   {
-   "hash": "19a4ba99f9e0c18d4c1d",
+   "hash": "55f08129f16e58e0929d",
    "path": "js/stage/stacked.js",
-   "size": 1255,
+   "size": 1851,
    "tier": "shell"
   },
   {

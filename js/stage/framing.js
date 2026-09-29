@@ -3,8 +3,8 @@
 import * as THREE from 'three'
 
 // The stacked-vs-column predicate lives in ./stacked.js (dependency-free, shared with the page's JS and mirrored by the CSS).
-import { isStacked, isTabletStacked } from './stacked.js'
-export { STACK_MAX_W, STACK_PORTRAIT_MAX_W, STACKED_QUERY, TABLET_STACKED_QUERY, isStacked, isTabletStacked } from './stacked.js'
+import { isStacked, isTabletStacked, isIpadLandscape } from './stacked.js'
+export { STACK_MAX_W, STACK_PORTRAIT_MAX_W, STACKED_QUERY, TABLET_STACKED_QUERY, isStacked, isTabletStacked, isIpadLandscape } from './stacked.js'
 
 // Right edge (CSS px) of the widest text column, mirroring css: --gutter = clamp(16px, 6.5vw, 8rem) plus the hero panel
 // min(46vw, 60rem). Everything the 3D draws (subject, phase words, hint) must stay to the right of this.
@@ -26,6 +26,8 @@ export function safeRect(aspect, w) {
       ? { x0: 0.05, x1: 0.95, y0: 0.08, y1: stackedSceneBottom(w, h) }
       : { x0: 0.05, x1: 0.95, y0: 0.105, y1: 0.5 }
   }
+  // iPad landscape: the grid's C column and the cup must clear the right edge with real air (the last tiles were cropped there)
+  if (w !== undefined && isIpadLandscape(w, h)) return { x0: Math.max(0.535, textColumnRight(w) / w + 0.01), x1: 0.945, y0: 0.13, y1: 0.9 }
   return { x0: Math.max(0.53, w ? textColumnRight(w) / w + 0.005 : 0), x1: 0.975, y0: 0.115, y1: 0.93 }
 }
 

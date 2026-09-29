@@ -2,11 +2,10 @@
 //  - ONE path: upcoming = a faint hairline, travelled = a bright line with a soft comet falloff behind the gripper and a
 //    glowing head on the tool tip (no bloom involved: the glow is a wider translucent copy, so it is smooth, not blocky),
 //  - a small node at each phase point (hollow ring -> pulse as the gripper passes -> filled dot),
-//  - the phase words as billboarded CSS3D text (styled by the page via .stage-phase classes). The active word grows and
+//  - the phase words as billboarded DOM text (plain 2D transforms at the projected point: no CSS3D matrix, so Safari and Chrome agree to the pixel) (styled by the page via .stage-phase classes). The active word grows and
 //    glows; the layout is a deterministic slot picker (fixed candidate slots, costs, sticky choice + dwell time), so words
 //    never swap or jitter, stay off each other, the arm, the path, the cell labels and the page's text column.
 import * as THREE from 'three'
-import { CSS3DRenderer, CSS3DSprite } from 'three/addons/renderers/CSS3DRenderer.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js'
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
@@ -14,6 +13,7 @@ import { PAL, mixL, isLightPal } from './palette.js'
 import { HZ, PHASE_NAMES } from './tasks.js'
 import { cellCenter, GRID } from './layout.js'
 import { CELLS } from './protocol.js'
+import { isIpadLandscape } from './stacked.js'
 
 const N = PHASE_NAMES.length
 const WORD_SCALE = 0.00046 // world metres per CSS px of the word's own layout
@@ -31,7 +31,9 @@ const OK_ACTIVE = 2500, OK_QUIET = 1000 // ...and above these the word is hidden
 const KEEP_MARGIN = 12 // px of air around the page's measured text
 const MAX_LAG = 40 // a word never trails its target by more than this many px (low frame rates, camera flights)
 const RING_COST = 34 // extra cost per ring step, so a word only drifts away from its node when the near slots are taken
-const MIN_WORD_PX = 10, MAX_BOOST = 1.4 // quiet-word height floor (px) and how far it may scale to reach it
+const MIN_WORD_PX = 10, MAX_BOOST = 1.4 // (iPad landscape: TAB_* below)
+const TAB_MIN_WORD_PX = 18, TAB_MAX_BOOST = 1.8, TAB_GAP = 20 // iPad landscape: legible quiet words, and every word a short hop from its node
+// quiet-word height floor (px) and how far it may scale to reach it
 const REF_SPREAD = 568 // on-screen diagonal (px) of the phase nodes on a 1440x900 desktop: the size the slot gaps were tuned at
 
 // Low-specificity defaults so the page's own .stage-phase styles win without !important.
@@ -193,16 +195,14 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
   head.visible = false
   group.add(head)
 
-  // ---- CSS3D words ----
-  const cssScene = new THREE.Scene()
-  const cssRenderer = new CSS3DRenderer()
-  const layer = document.createElement('div') // clips + positions; the renderer's element inside is shifted by the lens shift
+  // ---- DOM words ----
+  // Every word is placed in SCREEN space (the layout below already works in px): translate to the projected point, scale by the
+  // node's px-per-metre. No CSS3D perspective/matrix3d: those disagreed with the WebGL projection on Safari (words landing far from
+  // their nodes), and there is nothing 3D about a billboard.
+  const layer = document.createElement('div') // clips + positions (stage.js sizes it to the canvas)
   layer.className = 'stage-phases'
   layer.setAttribute('aria-hidden', 'true')
   layer.style.cssText = 'pointer-events:none;overflow:hidden'
-  cssRenderer.domElement.style.overflow = 'visible'
-  cssRenderer.domElement.style.pointerEvents = 'none'
-  layer.append(cssRenderer.domElement)
   canvas.after(layer)
 
   const words = PHASE_NAMES.map((ph, i) => {
@@ -214,15 +214,13 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
     const bar = document.createElement('i')
     el.append(label, bar)
     // the stage owns opacity / size / position every frame: only colour and shadow may ease via CSS
-    el.style.cssText = 'opacity:0;transition:color .3s;'
+    el.style.cssText = 'position:absolute;left:0;top:0;transform-origin:50% 50%;opacity:0;transition:color .3s;'
     el.addEventListener('pointerenter', () => { if (state.interactive) { el.classList.add('stage-phase--hover'); el.style.cursor = 'pointer' } })
     el.addEventListener('pointerleave', () => el.classList.remove('stage-phase--hover'))
     el.addEventListener('click', (e) => { if (state.interactive) { e.stopPropagation(); clicks.forEach((cb) => cb(ph)) } })
-    const obj = new CSS3DSprite(el)
-    obj.scale.setScalar(WORD_SCALE)
-    cssScene.add(obj)
+    layer.append(el)
     return {
-      ph, el, bar, obj, cls: '', w: 0, h: 0, pw: 0, ph_: 0,
+      ph, el, bar, cls: '', w: 0, h: 0, pw: 0, ph_: 0,
       a: 0, av: 0, k: 0, kv: 0, s: 1, boost: 1, // opacity, active amount (0..1) - both spring-smoothed
       px: null, py: null, vx: 0, vy: 0, slot: -1, slotT: -9, // on-screen centre (spring) and the chosen layout slot
       vis: 0, fit: false, fitT: 0, tx: 0, ty: 0, // vis: 0..1 shown-ness (a word with no free room is hidden); fit: has a valid slot now
@@ -238,6 +236,7 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
   const anchorPx = words.map(() => [0, 0, 0]) // x, y, depth
   const tmp = [0, 0, 0]
   let sizeW = 1, sizeH = 1, lastDpr = 0
+  let tab = false // iPad landscape tuning (see stacked.js)
   let sceneK = 1 // 0.4..1: on-screen size of the phase nodes relative to the desktop layout
   let sizesFor = null
   let time = 0
@@ -450,7 +449,7 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
     // The slot gap follows how big the scene is on screen (phones / narrow windows draw it much smaller), so a word stays
     // a short leader away from its node instead of a desktop-sized 45-85 px.
     const gap = mode === 'full' ? 34 : 26
-    const g = (gap * 1.2 + 4) * sceneK
+    const g = tab ? TAB_GAP : (gap * 1.2 + 4) * sceneK
     for (const i of order) {
       const wd = words[i]
       const sT = S_ACTIVE
@@ -505,7 +504,7 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
     if (sizesFor !== plan) measure()
     if (sizeW !== w || sizeH !== h || lastDpr !== dpr) {
       sizeW = w; sizeH = h; lastDpr = dpr
-      cssRenderer.setSize(w, h)
+      tab = isIpadLandscape(w, h)
       leadMat.resolution.set(w * dpr, h * dpr)
       leadMat.linewidth = 0.9 * dpr
       ribbonMat.uniforms.uRes.value.set(w * dpr, h * dpr)
@@ -580,7 +579,8 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
       const wd = words[i]
       wd.pxPerM = h / (2 * Math.max(0.05, anchorPx[i][2]) * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2))
       // legibility floor: where the scene is drawn small (phones, portrait tablets) the quiet words would be ~8 px tall
-      wd.boost = Math.min(MAX_BOOST, Math.max(1, MIN_WORD_PX / Math.max(1, wd.h * WORD_SCALE * wd.pxPerM)))
+      const minPx = tab ? TAB_MIN_WORD_PX : MIN_WORD_PX, maxBoost = tab ? TAB_MAX_BOOST : MAX_BOOST
+      wd.boost = Math.min(maxBoost, Math.max(1, minPx / Math.max(1, wd.h * WORD_SCALE * wd.pxPerM)))
       wd.pw = wd.w * WORD_SCALE * wd.s * wd.boost * wd.pxPerM // on-screen size now (px)
       wd.ph_ = wd.h * WORD_SCALE * wd.s * wd.boost * wd.pxPerM
     }
@@ -611,8 +611,8 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
         const lag = Math.hypot(wd.px - wd.tx, wd.py - wd.ty)
         if (lag > MAX_LAG) { const f = MAX_LAG / lag; wd.px = wd.tx + (wd.px - wd.tx) * f; wd.py = wd.ty + (wd.py - wd.ty) * f }
       }
-      unproject(wd.px, wd.py, anchorPx[i][2], wd.obj.position)
-      wd.obj.scale.setScalar(WORD_SCALE * wd.s * wd.boost)
+      const sc = WORD_SCALE * wd.s * wd.boost * wd.pxPerM
+      wd.el.style.transform = `translate(${(wd.px - wd.w * 0.5).toFixed(2)}px,${(wd.py - wd.h * 0.5).toFixed(2)}px) scale(${sc.toFixed(4)})`
       // shown-ness: only while a valid slot exists (and stays valid for a moment: no flicker); a word whose CURRENT rect
       // touches the keep-out zone (it is still travelling, or the text scrolled under it) fades out at once
       wd.vis = wd.vis ?? 0
@@ -655,7 +655,6 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
     }
     leadBuf.needsUpdate = true
     leadCol.needsUpdate = true
-    cssRenderer.render(cssScene, camera)
   }
 
   return {
@@ -673,7 +672,7 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
       safe = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, rects: rects.length ? rects : [{ left: r.left, top: r.top, right: r.right, bottom: r.bottom }] }
     },
     onClick(cb) { clicks.push(cb) },
-    setSize(w, h) { sizeW = w; sizeH = h; cssRenderer.setSize(w, h) },
+    setSize(w, h) { sizeW = w; sizeH = h },
     dispose() {
       layer.remove()
       if (ribbon) ribbon.geometry.dispose()

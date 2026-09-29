@@ -1,6 +1,7 @@
 // In-chapter camera moves, layered on top of the chapter shot: scrub-driven dollies and the sandbox lean.
 import * as THREE from 'three'
 import { cellCenter } from './layout.js'
+import { isIpadLandscape } from './stacked.js'
 
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
 const B2 = cellCenter('B2')
@@ -26,11 +27,14 @@ export function createDollies(camRig) {
       tcp.setFromMatrixPosition(tcpObj.matrixWorld)
       const m = camRig.mods
       m.scale = st.scale
-      m.fov = st.fov - 3 * st.lean
+      // iPad landscape: the fitted grid already touches the free strip, so the sandbox lean (zoom in + drift toward the gripper) would push
+      // the C column off the right edge; keep the framing still there.
+      const still = isIpadLandscape(camRig.width || 0, camRig.height || 0) ? 0 : 1
+      m.fov = st.fov - 3 * st.lean * still
       if (st.look > 0.001) { m.lookTo.copy(B2); m.lookK = st.look } // data: centre B2
-      else if (st.lean > 0.001) { m.lookTo.copy(tcp); m.lookK = 0.3 * st.lean } // sandbox: lean toward the gripper
+      else if (st.lean > 0.001) { m.lookTo.copy(tcp); m.lookK = 0.3 * st.lean * still } // sandbox: lean toward the gripper
       else m.lookK = 0
     },
-    leanTarget(out, base) { return out.copy(base).lerp(tcp, 0.3 * st.lean) },
+    leanTarget(out, base) { return out.copy(base).lerp(tcp, 0.3 * st.lean * (isIpadLandscape(camRig.width || 0, camRig.height || 0) ? 0 : 1)) },
   }
 }
