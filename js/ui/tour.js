@@ -98,7 +98,7 @@ export function initTour({ stage, getScroll }) {
   const panelOf = (s) => $('.panel', $(s.root)) || $(s.root);
   // The box around what is actually readable in a section (its headings, text, figures, controls), not its padding.
   const CONTENT = 'h1, h2, h3, p, li, figure, figcaption, dl, button, .counter, .giant-cell, .seg, .policies-hud, .sandbox-hud, .strip-progress';
-  const NOT_CONTENT = '.sr-only, .stage-label, .clip-toggle, .clip-play, .reel-play, .hero-note, .swipe-hint, [hidden], .vc';
+  const NOT_CONTENT = '.sr-only, .stage-label, .clip-toggle, .fs-btn, .clip-play, .reel-play, .hero-note, .swipe-hint, [hidden], .vc';
   function contentRect(s) {
     const el = $(s.root);
     let top = Infinity, bottom = -Infinity;
@@ -469,6 +469,9 @@ export function initTour({ stage, getScroll }) {
     if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); return; }
     if (state === 'playing' && SCROLL_KEYS.has(e.key)) pause();
   }, true);
+
+  // A visitor who opens a video fullscreen has taken over: the tour waits for them.
+  document.addEventListener('media:fullscreen', (e) => { if (e.detail?.on) pause(); });
 
   paintSpeed();
   paint();

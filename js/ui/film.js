@@ -1,5 +1,5 @@
 import { $, $$, reduced } from './env.js';
-import { guardVideo, setExclusive } from './video-guard.js';
+import { guardVideo, setExclusive, playback } from './video-guard.js';
 
 const ICON = {
   play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
@@ -50,7 +50,7 @@ function buildControls(frame, v) {
   });
   ['play', 'pause', 'volumechange'].forEach((ev) => v.addEventListener(ev, sync));
   v.addEventListener('timeupdate', paint);
-  v.addEventListener('click', () => (v.paused ? v.play() : v.pause()));
+  v.addEventListener('click', () => { if (!v.controls) (v.paused ? v.play() : v.pause()); }); // native controls own clicks in fullscreen
   sync();
 }
 
@@ -67,7 +67,7 @@ export function initFilm() {
     reel.classList.add('is-previewing');
   };
   const stopPreview = (reel) => {
-    if (engaged === reel) return;
+    if (engaged === reel || playback.fullscreen === $('video', reel)) return;
     guards.get(reel).unload();
     reel.classList.remove('is-previewing');
   };
@@ -106,14 +106,25 @@ export function initFilm() {
     btn.addEventListener('focus', () => { reel.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); preview(reel); });
     btn.addEventListener('blur', () => stopPreview(reel));
     btn.addEventListener('click', () => engage(reel));
-    v.addEventListener('ended', () => disengage(reel));
+    v.addEventListener('ended', () => { if (playback.fullscreen !== v) disengage(reel); });
+  });
+
+  // Leaving fullscreen: a reel the visitor did not engage goes back to its poster (unless it is hovered, or the first reel
+  // that autoplays while in view); one that finished while fullscreen is disengaged as usual.
+  document.addEventListener('media:fullscreen', (e) => {
+    const { on, video } = e.detail;
+    const reel = reels.find((r) => $('video', r) === video);
+    if (on || !reel) return;
+    if (video.ended) disengage(reel);
+    else if (engaged !== reel && !reel.matches(':hover') && !(reel === reels[0] && firstVisible)) stopPreview(reel);
   });
 
   // The first reel (ACT in B2, the key clip) plays muted while it is on screen, so the proof is moving without a click.
   // Hover previews and engaged reels still take over; reduced motion keeps it on the poster.
+  let firstVisible = false;
   if (!reduced && reels[0]) {
     new IntersectionObserver((entries) => {
-      entries.forEach((e) => { e.isIntersecting ? preview(reels[0]) : stopPreview(reels[0]); });
+      entries.forEach((e) => { firstVisible = e.isIntersecting; e.isIntersecting ? preview(reels[0]) : stopPreview(reels[0]); });
     }, { threshold: 0.6 }).observe(reels[0]);
   }
 

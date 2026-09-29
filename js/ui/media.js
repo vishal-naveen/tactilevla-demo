@@ -19,7 +19,9 @@ export function initClips() {
   const clips = [];
   const arbitrate = () => {
     let best = null;
-    if (!playback.exclusive && !document.hidden) {
+    if (playback.fullscreen) {
+      best = clips.find((c) => c.g.v === playback.fullscreen) || null; // fullscreen video wins; every other loop rests
+    } else if (!playback.exclusive && !document.hidden) {
       for (const c of clips) if (!c.userPaused && c.ratio >= PLAY_RATIO && (!best || c.ratio > best.ratio)) best = c;
     }
     for (const c of clips) {
@@ -28,7 +30,7 @@ export function initClips() {
         if (c.g.v.paused) c.tryPlay();
       } else {
         c.g.pause();
-        if (c.ratio === 0) {
+        if (c.ratio === 0 && !playback.fullscreen) {
           clearTimeout(c.unloadTimer);
           c.unloadTimer = setTimeout(() => { if (c.ratio === 0 && c.g.v.paused) c.g.unload(); }, UNLOAD_AFTER_MS);
         }

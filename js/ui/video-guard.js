@@ -13,7 +13,14 @@ const STALL_MS = 2500;
 const MAX_RETRIES = 3;
 
 /** A film reel the visitor engaged (sound on) owns the decoders: looping clips pause while it is set. */
-export const playback = { exclusive: null };
+export const playback = { exclusive: null, fullscreen: null };
+/** video element -> its guard, so other modules (fullscreen button) can start/pause the same instance. */
+export const guards = new WeakMap();
+/** The video currently in (or entering) fullscreen; the arbiter and the reel hover-unload leave it alone. */
+export const setFullscreen = (video) => {
+  playback.fullscreen = video;
+  document.dispatchEvent(new CustomEvent('media:exclusive'));
+};
 export const setExclusive = (owner) => {
   playback.exclusive = owner;
   document.dispatchEvent(new CustomEvent('media:exclusive'));
@@ -129,5 +136,7 @@ export function guardVideo(box, v, { muted = true } = {}) {
     if (!document.hidden && want && v.paused && !v.ended) start().catch(() => {});
   });
 
-  return { v, start, pause, unload, rewind, ensureSrc, get playing() { return !v.paused; }, get want() { return want; } };
+  const api = { v, start, pause, unload, rewind, ensureSrc, get playing() { return !v.paused; }, get want() { return want; } };
+  guards.set(v, api);
+  return api;
 }

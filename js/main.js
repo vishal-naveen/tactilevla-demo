@@ -11,6 +11,7 @@ import { initSandbox } from './ui/sandbox.js';
 import { initPlaceHint } from './ui/place-hint.js';
 import { initFilm } from './ui/film.js';
 import { initClips } from './ui/media.js';
+import { initFullscreen } from './ui/fullscreen.js';
 import { initTelemetry } from './ui/telemetry.js';
 import { initSafeArea } from './ui/safe-area.js';
 import { initTour } from './ui/tour.js';
@@ -170,6 +171,7 @@ document.addEventListener('webkitendfullscreen', () => setPaused('video-fullscre
 safe('results', initResults);
 safe('film', initFilm);
 safe('clips', initClips);
+safe('fullscreen', initFullscreen);
 safe('policies', () => initPolicies(stage));
 sandbox = safe('sandbox', () => initSandbox(stage), null);
 if (stageError) safe('sandbox', () => sandbox?.disable(stageError.hardware ? 'The 3D reconstruction needs hardware acceleration.' : 'The 3D reconstruction needs WebGL, which isn’t available here.'));

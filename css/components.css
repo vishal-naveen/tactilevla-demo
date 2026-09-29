@@ -165,3 +165,24 @@
   .lapse { width: min(14rem, 30vw); top: calc(var(--topbar-h) + 1.6rem); }
   .lapse figcaption { font-size: 0.8125rem; }
 }
+
+/* Fullscreen button on every video (js/ui/fullscreen.js): top-right of the frame; hover/focus reveal on mouse devices,
+   always visible on touch. The feed's pause toggle owns its top-right, so the feed's button sits top-left. */
+.fs-btn {
+  position: absolute; right: 0.15rem; top: 0.15rem; z-index: 5; width: 2.75rem; height: 2.75rem;
+  display: grid; place-items: center; border-radius: 50%; color: var(--media-ink); transition: opacity 0.25s;
+}
+.fs-btn svg { width: 1.6rem; height: 1.6rem; padding: 0.4rem; border-radius: 50%; background: rgba(10, 12, 13, 0.72); transition: background-color 0.2s; }
+.fs-btn:hover svg { background: rgba(10, 12, 13, 0.92); }
+.fs-btn:focus-visible { outline: 2px solid var(--noodle); outline-offset: -4px; }
+.clip--inset .fs-btn { width: 2.25rem; height: 2.25rem; right: 0; top: 0; }
+.clip--inset .fs-btn svg { width: 1.4rem; height: 1.4rem; padding: 0.3rem; }
+.feed-screen .fs-btn { right: auto; left: 0.7rem; top: 0.7rem; }
+@media (hover: hover) and (pointer: fine) {
+  .fs-btn { opacity: 0; }
+  .clip:hover .fs-btn, .frame:hover .fs-btn, .feed-screen:hover .fs-btn, .fs-btn:focus-visible { opacity: 1; }
+}
+/* the clips crop to fill their frames; fullscreen must show the whole picture */
+video:fullscreen { object-fit: contain !important; width: 100% !important; height: 100% !important; background: #000; }
+video:-webkit-full-screen { object-fit: contain !important; width: 100% !important; height: 100% !important; background: #000; }
+@media (prefers-reduced-motion: reduce) { .fs-btn { transition: none; } }
