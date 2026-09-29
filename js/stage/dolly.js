@@ -12,7 +12,7 @@ export function createDollies(camRig) {
     get lean() { return st.lean },
     /** @param running whether the arm is mid-task in the sandbox; tcpObj the gripper frame */
     update(dt, { chapter, progress, running, tcpObj, reduced }) {
-      const k = reduced ? 1 : 1 - Math.exp(-dt * 8)
+      const k = reduced ? 1 : 1 - Math.exp(-dt * 4.5) // gentler than a snap: chapter changes must not tug the camera
       let scale = 1, fov = 0, look = 0
       if (chapter === 'arm') scale = 1 - 0.08 * smooth(0, 1, progress.arm ?? 0) // slow push-in across the pin
       if (chapter === 'data') { // the closing beat: tighten onto the empty middle

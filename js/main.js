@@ -12,6 +12,9 @@ import { initPlaceHint } from './ui/place-hint.js';
 import { initFilm } from './ui/film.js';
 import { initClips } from './ui/media.js';
 import { initTelemetry } from './ui/telemetry.js';
+import { initSafeArea } from './ui/safe-area.js';
+import { initTour } from './ui/tour.js';
+import { initTourFade } from './ui/tour-fade.js';
 
 window.__booted = true;
 const root = document.documentElement;
@@ -44,7 +47,7 @@ const SOFT_MAX_MS = 25000;  // ...but never hold the loader longer than this
 const IDLE_MS = 2000;       // "still progressing" = onLoadProgress advanced within this window
 const t0 = performance.now();
 let lastProgress = t0;
-const canvas = $('#stage');
+let canvas = $('#stage'); // replaced by a fresh element if the stage has to be re-created after a dead WebGL context
 const proxy = createStageProxy();
 let scrollHandle = null;
 let sandbox = null;
@@ -121,6 +124,49 @@ if (outcome.stage) {
 }
 const stage = proxy;
 
+// --- Stage lifecycle: context loss, fullscreen video, visibility ----------------------------------------------------
+// iOS Safari kills a tab's WebGL context under GPU-memory pressure. The stage tells us on its canvas:
+//   stage:lost      -> show the static poster (page stays fully usable) until the browser hands the context back
+//   stage:restored  -> the stage rebuilt its GPU-only resources; fade the canvas back in
+//   stage:dead      -> no restore came: dispose it and create a brand-new stage on a fresh canvas (a lost canvas can never
+//                      yield a new context), then re-sync chapter / theme / policy exactly like a late attach.
+let rebuilding = false, rebuilds = 0;
+async function rebuildStage() {
+  if (rebuilding || rebuilds >= 3) return;
+  rebuilding = true; rebuilds++;
+  root.classList.add('no-stage');
+  safe('dispose dead stage', () => proxy.real?.dispose());
+  proxy.detach();
+  const fresh = canvas.cloneNode(false);
+  canvas.replaceWith(fresh);
+  canvas = fresh;
+  try {
+    attachLate(await startStage());
+    console.info('3D stage re-created after the WebGL context was lost.');
+  } catch (err) {
+    console.info('3D stage could not be re-created; keeping the static background.', err?.message);
+    safe('sandbox', () => sandbox?.disable('The 3D reconstruction stopped because the browser reclaimed the GPU. Reload the page to bring it back.'));
+  } finally { rebuilding = false; }
+}
+document.addEventListener('stage:lost', () => root.classList.add('no-stage'));
+document.addEventListener('stage:restored', () => {
+  root.classList.add('stage-fading');
+  root.classList.remove('no-stage');
+  setTimeout(() => root.classList.remove('stage-fading'), 1200);
+});
+document.addEventListener('stage:dead', () => { rebuildStage(); });
+
+// Rendering pauses for any of several reasons; it runs only when none applies. A video in native fullscreen owns the GPU.
+const pauseReasons = new Set();
+const setPaused = (reason, on) => { on ? pauseReasons.add(reason) : pauseReasons.delete(reason); pauseReasons.size ? stage.pause() : stage.resume(); };
+const isVideoFullscreen = () => {
+  const el = document.fullscreenElement || document.webkitFullscreenElement;
+  return !!el && (el.tagName === 'VIDEO' || !!el.querySelector?.('video'));
+};
+document.addEventListener('webkitbeginfullscreen', () => setPaused('video-fullscreen', true), true);  // iOS: the video element itself
+document.addEventListener('webkitendfullscreen', () => setPaused('video-fullscreen', false), true);
+['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => setPaused('video-fullscreen', isVideoFullscreen())));
+
 safe('results', initResults);
 safe('film', initFilm);
 safe('clips', initClips);
@@ -129,11 +175,12 @@ sandbox = safe('sandbox', () => initSandbox(stage), null);
 if (stageError) safe('sandbox', () => sandbox?.disable(stageError.hardware ? 'The 3D reconstruction needs hardware acceleration.' : 'The 3D reconstruction needs WebGL, which isn’t available here.'));
 safe('place hint', () => initPlaceHint(stage));
 safe('data', initData);
+safe('safe area', () => initSafeArea(stage));
 const telemetry = safe('telemetry', () => initTelemetry(stage), null);
 if (new URLSearchParams(location.search).has('themes')) {
   safe('theme switcher', () => initThemeSwitcher((name) => { stage.setTheme(name); }));
 }
-safe('visibility', () => document.addEventListener('visibilitychange', () => (document.hidden ? stage.pause() : stage.resume())));
+safe('visibility', () => document.addEventListener('visibilitychange', () => setPaused('hidden', document.hidden)));
 
 let cued = false;
 const cue = () => {
@@ -151,3 +198,5 @@ try {
   $('#loader')?.remove();
 }
 cue();
+safe('tour', () => initTour({ stage, getScroll: () => scrollHandle }));
+safe('tour fade', initTourFade);

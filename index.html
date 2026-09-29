@@ -37,11 +37,11 @@ function failsafe() {
 setTimeout(failsafe, 9000);
 </script>
 <title>TactileVLA-Edge</title>
-<meta name="description" content="A sub-$300 robot arm, trained on 160 human demonstrations, picked up a foam noodle from a table cell no demonstration ever touched. Real footage, a 3D reconstruction, and the honest numbers.">
+<meta name="description" content="Can a sub-$300 robot arm, taught by 160 human demonstrations, do its task from a table position it was never shown? The setup, the test, real footage, the numbers and the limits.">
 <meta name="theme-color" content="#0c1626">
 <meta property="og:type" content="website">
 <meta property="og:title" content="TactileVLA-Edge">
-<meta property="og:description" content="It never saw B2. It picked the noodle up anyway. A sub-$300 robot arm, two imitation-learning policies, and one held-out cell.">
+<meta property="og:description" content="A sub-$300 robot arm learns from 160 human demonstrations, then faces a table position it was never shown. The story from setup to result.">
 <meta property="og:url" content="https://vishal-naveen.github.io/tactilevla-demo/">
 <meta property="og:image" content="https://vishal-naveen.github.io/tactilevla-demo/media/og-image.jpg">
 <meta property="og:image:width" content="1200">
@@ -64,6 +64,7 @@ setTimeout(failsafe, 9000);
 <link rel="stylesheet" href="css/stage-labels.css">
 <link rel="stylesheet" href="css/theme.css">
 <link rel="stylesheet" href="css/telemetry.css">
+<link rel="stylesheet" href="css/tour.css">
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
@@ -92,6 +93,16 @@ setTimeout(failsafe, 9000);
 <div class="scrim" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 <div class="rail" id="rail" aria-hidden="true"><i id="rail-fill"></i></div>
+<div class="tour-pill" id="tour-pill" role="group" aria-label="Guided tour" data-state="idle">
+  <button type="button" class="tour-toggle" id="tour-toggle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg><span class="tour-toggle__t">Play the tour</span></button>
+  <p class="tour-name" id="tour-name" aria-hidden="true">Guided tour</p>
+  <div class="tour-speed" role="group" aria-label="Tour speed">
+    <button type="button" data-speed="0.5" aria-pressed="false">0.5×</button><button type="button" data-speed="1" aria-pressed="true">1×</button><button type="button" data-speed="1.5" aria-pressed="false">1.5×</button><button type="button" data-speed="2" aria-pressed="false">2×</button>
+  </div>
+  <button type="button" class="tour-stop" id="tour-stop" aria-label="End the tour" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+  <span class="tour-bar" aria-hidden="true"><i id="tour-bar"></i></span>
+  <p class="sr-only" id="tour-live" role="status" aria-live="polite"></p>
+</div>
 <p class="stage-badge" id="stage-badge">3D: kinematic reconstruction, not policy output</p>
 
 <header class="topbar hero-fade" id="topbar">
@@ -108,204 +119,224 @@ setTimeout(failsafe, 9000);
 <section id="hero" class="chapter chapter--hero" data-chapter="hero" tabindex="-1">
   <div class="panel">
     <h1 id="hero-title" class="display hero-title">
-      <span class="line"><span>It never saw B2.</span></span>
-      <span class="line"><span>It picked the</span></span>
-      <span class="line"><span>noodle up anyway.</span></span>
+      <span class="line"><span>A robot arm</span></span>
+      <span class="line"><span>that learns</span></span>
+      <span class="line"><span>by watching.</span></span>
     </h1>
-    <p class="lede hero-fade">A sub-$300 arm, taught by 160 human demonstrations. Two policies, ACT and SmolVLA, both picked the noodle up from the one spot no demonstration ever touched.</p>
+    <p class="lede lede--sub hero-fade">Guided through one task 160 times, then tested on a spot it had never seen.</p>
+    <ul class="glance hero-fade" aria-label="At a glance">
+      <li><b class="num">160</b> demonstrations</li>
+      <li><b class="num">2</b> policies</li>
+      <li><b class="num">18/20</b> and <b class="num">16/20</b> trials succeeded</li>
+      <li>under <b class="num">$300</b></li>
+    </ul>
     <div class="actions hero-fade">
-      <a class="btn btn--primary" href="#film" data-scroll>Watch the real runs</a>
-      <a class="btn btn--ghost" href="https://github.com/vishal-naveen/TactileVLA-Edge/blob/main/docs/results.md">Read the results</a>
+      <a class="btn btn--primary" href="#arm" data-scroll>How it works</a>
+      <button type="button" class="btn btn--ghost btn--tour" id="tour-start"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>Play the tour</button>
+      <a class="btn btn--ghost" href="https://github.com/vishal-naveen/TactileVLA-Edge" rel="noopener">GitHub</a>
     </div>
     <figure class="hero-inset hero-fade">
     <div class="clip clip--inset" data-clip>
-      <video src="media/act-b2-heldout.mp4" poster="media/act-b2-heldout.jpg" muted loop playsinline preload="metadata" width="420" height="249" aria-label="Real footage: the ACT policy picking up the noodle from cell B2"></video>
-      <button type="button" class="clip-play" aria-label="Play the real run of ACT in B2" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>
+      <video src="media/act-b2-heldout.mp4" poster="media/act-b2-heldout.jpg" muted loop playsinline preload="metadata" width="420" height="249" aria-label="Real footage: the arm picking up the noodle on its own and dropping it in the cup"></video>
+      <button type="button" class="clip-play" aria-label="Play the real run" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>
     </div>
-    <figcaption>Real run, ACT in B2</figcaption>
+    <figcaption>Real footage: the arm working on its own</figcaption>
   </figure>
   </div>
-  <p class="hero-note hero-fade">The 3D arm on this page is a reconstruction from the SO-101’s URDF. The real footage is further down.</p>
+  <p class="hero-note hero-fade">The 3D arm on this page is a reconstruction from the SO-101’s URDF. The real footage is below.</p>
 </section>
 
-<section id="arm" class="chapter chapter--tall chapter--arm" data-chapter="arm" data-scrub tabindex="-1">
-  <div class="pin"><div class="panel">
-    <h2 id="arm-title" class="display">Six hobby servos and a 3D printer.</h2>
-    <div class="beats">
-      <p class="beat" data-scrub-in="-1,0,0.27,0.35">The SO-101 is an open-source arm: printed links, six Feetech STS3215 servos, two USB cameras. The published tactile-VLA work runs on research arms that cost around $30,000. This setup costs under $300 — roughly a hundredth.</p>
-      <p class="beat beat--stat" data-scrub-in="0.3,0.4,0.62,0.7"><span class="stat-n">≈ 1/100</span><span class="stat-l">the cost of the research arms behind published tactile-VLA work</span></p>
-      <p class="beat" data-scrub-in="0.66,0.76">One arm is driven by hand. The other copies it, and that’s how every demonstration was recorded.</p>
-    </div>
-  </div></div>
-</section>
-
-<section id="data" class="chapter chapter--tall chapter--data" data-chapter="data" data-scrub tabindex="-1">
-  <div class="pin"><div class="panel">
-    <h2 id="data-title" class="display">160 demonstrations, one hand at a time.</h2>
-    <p>Every episode is a person driving a leader arm while the follower copies it, then resetting the scene by hand. Eight cells on a 3×3 grid, exactly 20 episodes each, the noodle rotated through ±90° in 10° steps.</p>
-    <p data-scrub-in="0.04,0.12">Four rounds around the perimeter, the walk order reversed on rounds 2 and 4, so no cell always sits at the same point in a round.</p>
-    <div class="counter" id="counter">
-      <p class="sr-only">Scroll to replay episodes 1–160 in recording order.</p>
-      <p class="counter-main" aria-live="off"><span class="counter-lbl">Episode</span> <span class="counter-n" id="counter-n">0</span> <span class="counter-of">/ 160</span></p>
-      <p class="counter-sub" id="counter-sub">No episodes recorded yet</p>
-      <p class="counter-note">Replayed in the protocol’s recording order. Dots, path and tethers are illustrative, not recorded positions.</p>
-    </div>
-    <dl class="stats">
-      <div><dt>episodes</dt><dd>160</dd></div>
-      <div><dt>frames</dt><dd>67,693</dd></div>
-      <div><dt>fps</dt><dd>30</dd></div>
-    </dl>
-    <p class="closing" data-scrub-in="0.56,0.64">The center cell was never recorded. Not once.</p>
-  </div></div>
-</section>
-
-<section id="sees" class="chapter chapter--pin" data-chapter="sees" tabindex="-1">
-  <div class="pin"><div class="panel panel--wide">
-    <h2 id="sees-title" class="display">Two cameras. One goes blind at the worst moment.</h2>
-    <p>The overhead camera frames the workspace at 800×600. At the instant of grasp, the gripper hides the object from it — so a 640×480 camera on the wrist keeps the contact legible. That blind spot is the case for touch.</p>
-    <figure class="feed">
-      <div class="feed-screen" data-clip>
-        <video id="feed-video" src="media/observation-streams.mp4" poster="media/observation-streams.jpg" autoplay muted loop playsinline preload="metadata" width="600" height="225" aria-label="Two camera streams side by side: the overhead view of the table on the left, the wrist camera view of the gripper on the right, playing an episode from the training set."></video>
-        <button type="button" class="clip-play" aria-label="Play the camera streams" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>
-        <span class="feed-tag feed-tag--l">overhead 800×600</span>
-        <span class="feed-tag feed-tag--r">wrist 640×480</span>
+<section id="setup" class="group" aria-label="The setup">
+  <div id="arm" class="chapter chapter--tall chapter--arm" data-chapter="arm" data-scrub tabindex="-1">
+    <div class="pin"><div class="panel">
+      <h2 id="arm-title" class="display">The setup: a sub-$300 arm.</h2>
+      <div class="beats">
+        <p class="beat" data-scrub-in="-1,0,0.4,0.5">The SO-101 is an open-source arm with 3D-printed links and six Feetech STS3215 servos. A person drives one arm by hand and a second arm copies it, and that’s how every demonstration was recorded.</p>
+        <p class="beat beat--stat" data-scrub-in="0.44,0.56"><span class="stat-n">≈ 1/100</span><span class="stat-l">the cost of the research arms behind published tactile-VLA work</span></p>
       </div>
-      <figcaption>The actual observation space: overhead left, wrist right, from episode 0 of the training set.</figcaption>
-    </figure>
-  </div></div>
+    </div></div>
+  </div>
+
+  <div id="task" class="chapter chapter--step chapter--task" data-chapter="data" tabindex="-1" aria-labelledby="task-title">
+    <div class="panel">
+      <h2 id="task-title" class="display">One job, and one rule.</h2>
+      <p>The job: pick up a short piece of foam pool noodle and drop it in a yellow cup. A run counts only if the noodle ends up in the cup.</p>
+      <p>The noodle starts on a 3×3 grid of table positions, A1 to C3. Eight cells were used to teach the arm. The center, B2, was left empty on purpose.</p>
+      <p class="closing">Why leave one out?</p>
+      <p>An arm that only memorized its demonstrations can look perfect on the cells it practiced. B2 shows whether it learned the job itself.</p>
+    </div>
+  </div>
 </section>
 
-<section id="policies" class="chapter chapter--pin" data-chapter="policies" tabindex="-1">
-  <div class="pin"><div class="panel">
-    <h2 id="policies-title" class="display">Two policies, the same 160 episodes.</h2>
-    <div class="seg" role="group" aria-label="Choose a policy">
-      <button type="button" class="seg-btn" data-policy="act" aria-pressed="true">ACT</button>
-      <button type="button" class="seg-btn" data-policy="smolvla" aria-pressed="false">SmolVLA</button>
-    </div>
-    <div class="specs" id="specs-act" data-spec="act">
-      <p class="spec-lead">About 52M parameters</p>
-      <ul><li>ResNet18 vision backbone</li><li>Predicts 100 actions at a time</li><li>42,308 training steps</li><li>Learning rate 1e-5, constant</li></ul>
-    </div>
-    <div class="specs" id="specs-smolvla" data-spec="smolvla" hidden>
-      <p class="spec-lead">About 450M parameters</p>
-      <ul><li>Pretrained vision-language model, vision encoder frozen</li><li>Predicts 50 actions at a time</li><li>20,000 training steps</li><li>Learning rate 1e-4, warmup then decay</li></ul>
-    </div>
-    <div class="policies-hud"></div>
-    <p>Both trained on one RTX 3060. Both run on a MacBook.</p>
-    <p class="caption">The trail follows the reconstruction’s scripted path, sized to each policy’s chunk length (100 vs 50). It illustrates chunking; it is not policy output.</p>
-  </div></div>
-</section>
-
-<section id="test" class="chapter chapter--test" data-chapter="test" tabindex="-1">
-  <div class="panel">
-    <p class="giant-cell" aria-hidden="true">B2</p>
-    <h2 id="test-title" class="display">Zero training episodes. Both policies succeeded.</h2>
-    <p>A policy that memorized its training trajectories and one that learned the task can look identical on the cells they trained on. The clean test is to put the object somewhere it has never been. B2 has trained cells on all four sides and none inside, so it tests whether the policy can interpolate.</p>
-    <figure class="clip-row">
-      <div class="clip" data-clip>
-        <video src="media/act-b2.mp4" poster="media/poster-act-b2.jpg" muted loop playsinline preload="none" width="540" height="960" aria-label="ACT policy picking up the noodle from cell B2 and dropping it in the yellow cup"></video>
-        <button type="button" class="clip-play" aria-label="Play the ACT in B2 clip" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>
+<section id="learned" class="group" aria-label="How it learned">
+  <div id="data" class="chapter chapter--tall chapter--data" data-chapter="data" data-scrub tabindex="-1">
+    <div class="pin"><div class="panel">
+      <h2 id="data-title" class="display">How it learned: 160 demonstrations, one hand at a time.</h2>
+      <p>Each one is a person driving the leader arm while the follower copies it, then resetting the scene by hand. Eight cells, exactly 20 demonstrations each, with the noodle rotated through ±90° in 10° steps.</p>
+      <div class="counter" id="counter">
+        <p class="sr-only">Scroll to replay demonstrations 1–160 in recording order.</p>
+        <p class="counter-main" aria-live="off"><span class="counter-lbl">Episode</span> <span class="counter-n" id="counter-n">0</span> <span class="counter-of">/ 160</span></p>
+        <p class="counter-sub" id="counter-sub">No episodes recorded yet</p>
+        <p class="counter-note">Replayed in the protocol’s recording order. Dots, path and tethers are illustrative, not recorded positions.</p>
       </div>
-      <figcaption>ACT in B2, real footage. Both policies were tried in B2 several times; every attempt succeeded.</figcaption>
-    </figure>
-  </div>
-</section>
-
-<section id="results" class="chapter" data-chapter="results" tabindex="-1">
-  <div class="panel panel--wide">
-    <h2 id="results-title" class="display results-title"><span>18 of 20.</span> <span>16 of 20.</span></h2>
-    <p class="task">The task: pick up the noodle and drop it in the cup. A trial counts only if the noodle ends up in the cup.</p>
-    <ol class="rows" id="rows">
-      <li class="row" data-k="18">
-        <div class="row-head"><h3>ACT</h3><p class="row-score"><span class="num">18</span> of 20</p></div>
-        <div class="dots" aria-hidden="true"></div>
-        <div class="interval" role="img" aria-label="ACT: 18 of 20 trials succeeded, 90 percent. 95 percent Clopper–Pearson interval 68 to 99 percent.">
-          <div class="track"><span class="range" style="--lo:68;--hi:99"></span><span class="point" style="--pt:90"></span></div>
-          <div class="ticks"><span>0</span><span>50</span><span>100%</span></div>
-          <p class="ci"><span><span class="num">90%</span> estimate</span><span class="ci-r">95% interval <span class="num">68–99%</span></span></p>
-        </div>
-      </li>
-      <li class="row" data-k="16">
-        <div class="row-head"><h3>SmolVLA-450M</h3><p class="row-score"><span class="num">16</span> of 20</p></div>
-        <div class="dots" aria-hidden="true"></div>
-        <div class="interval" role="img" aria-label="SmolVLA-450M: 16 of 20 trials succeeded, 80 percent. 95 percent Clopper–Pearson interval 56 to 94 percent.">
-          <div class="track"><span class="range" style="--lo:56;--hi:94"></span><span class="point" style="--pt:80"></span></div>
-          <div class="ticks"><span>0</span><span>50</span><span>100%</span></div>
-          <p class="ci"><span><span class="num">80%</span> estimate</span><span class="ci-r">95% interval <span class="num">56–94%</span></span></p>
-        </div>
-      </li>
-    </ol>
-    <p>Twenty trials can’t separate these two — the intervals overlap heavily. Both work. Telling them apart would take on the order of a hundred trials each.</p>
-    <p class="caption">20 autonomous trials per policy across the grid, B2 included, on the physical arm, scored by hand. No per-trial log exists, so the dots show counts, not order.</p>
-  </div>
-</section>
-
-<section id="film" class="chapter chapter--film" data-chapter="film" tabindex="-1">
-  <div class="panel film-head">
-    <h2 id="film-title" class="display">Watch the real thing.</h2>
-    <p>Four runs filmed end to end and narrated live. All four succeeded. These are filmed runs, not the scored trials.</p>
-    <p class="swipe-hint" aria-hidden="true">Swipe for more runs</p>
-  </div>
-  <div class="strip-wrap">
-    <div class="strip-nav">
-      <button type="button" class="nav-btn" id="strip-prev" aria-label="Previous run"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-      <button type="button" class="nav-btn" id="strip-next" aria-label="Next run"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      <dl class="stats">
+        <div><dt>episodes</dt><dd>160</dd></div>
+        <div><dt>frames</dt><dd>67,693</dd></div>
+        <div><dt>fps</dt><dd>30</dd></div>
+      </dl>
+      <p class="closing closing--quiet" data-scrub-in="0.6,0.7">B2 was never recorded.</p>
     </div>
-    <ul class="strip" id="strip" aria-label="Real runs, then the recording time-lapse">
-      <li class="reel reel--held" data-cell="B2"><figure>
-        <div class="frame"><video src="media/act-b2.mp4" poster="media/poster-act-b2.jpg" playsinline preload="none" width="540" height="960" aria-label="ACT picking up the noodle from B2"><track kind="captions" srclang="en" label="English" src="media/act-b2.vtt"></video><button type="button" class="reel-play" aria-label="Play ACT in B2 with sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
-        <figcaption><span class="tag tag--held">held out</span><strong>ACT</strong> in B2</figcaption></figure></li>
-      <li class="reel reel--held" data-cell="B2"><figure>
-        <div class="frame"><video src="media/smolvla-b2.mp4" poster="media/poster-smolvla-b2.jpg" playsinline preload="none" width="540" height="960" aria-label="SmolVLA-450M picking up the noodle from B2"><track kind="captions" srclang="en" label="English" src="media/smolvla-b2.vtt"></video><button type="button" class="reel-play" aria-label="Play SmolVLA-450M in B2 with sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
-        <figcaption><span class="tag tag--held">held out</span><strong>SmolVLA-450M</strong> in B2</figcaption></figure></li>
-      <li class="reel reel--trained" data-cell="A2"><figure>
-        <div class="frame"><video src="media/act-a2.mp4" poster="media/poster-act-a2.jpg" playsinline preload="none" width="540" height="960" aria-label="ACT picking up the noodle from A2"><track kind="captions" srclang="en" label="English" src="media/act-a2.vtt"></video><button type="button" class="reel-play" aria-label="Play ACT in A2 with sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
-        <figcaption><span class="tag tag--trained">trained</span><strong>ACT</strong> in A2</figcaption></figure></li>
-      <li class="reel reel--trained" data-cell="C3"><figure>
-        <div class="frame"><video src="media/smolvla-c3.mp4" poster="media/poster-smolvla-c3.jpg" playsinline preload="none" width="540" height="960" aria-label="SmolVLA-450M picking up the noodle from C3"><track kind="captions" srclang="en" label="English" src="media/smolvla-c3.vtt"></video><button type="button" class="reel-play" aria-label="Play SmolVLA-450M in C3 with sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
-        <figcaption><span class="tag tag--trained">trained</span><strong>SmolVLA-450M</strong> in C3</figcaption></figure></li>
-      <li class="reel reel--wide" data-cell="" id="timelapse-reel"><figure>
-        <div class="clip clip--wide" data-clip>
-          <video src="media/recording-timelapse.mp4" poster="media/poster-timelapse.jpg" muted loop playsinline preload="none" width="848" height="464" aria-label="Time-lapse of the recording session: a person driving the leader arm while the follower copies it"></video>
-          <button type="button" class="clip-play" aria-label="Play the recording time-lapse" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>
+    <figure class="lapse" data-scrub-in="0.03,0.14">
+      <div class="clip clip--wide" data-clip>
+        <video src="media/recording-timelapse.mp4" poster="media/poster-timelapse.jpg" muted loop playsinline preload="none" width="848" height="464" aria-label="Time-lapse of the recording session: a person driving the leader arm while the follower copies it"></video>
+        <button type="button" class="clip-play" aria-label="Play the recording time-lapse" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>
+      </div>
+      <figcaption>Time-lapse of recording the demonstrations</figcaption>
+    </figure>
+    </div>
+  </div>
+
+  <div id="sees" class="chapter chapter--step chapter--sees" data-chapter="sees" tabindex="-1" aria-labelledby="sees-title">
+    <div class="panel panel--wide">
+      <h2 id="sees-title" class="display">Two cameras. At the grasp, one goes blind.</h2>
+      <p>Each policy sees an overhead and a wrist camera, plus its own six joint positions. At the grasp the gripper hides the noodle from overhead, so the wrist view keeps it visible.</p>
+      <figure class="feed">
+        <div class="feed-screen" data-clip>
+          <video id="feed-video" src="media/observation-streams.mp4" poster="media/observation-streams.jpg" autoplay muted loop playsinline preload="metadata" width="600" height="225" aria-label="Two camera streams side by side: the overhead view of the table on the left, the wrist camera view of the gripper on the right, playing an episode from the training set."></video>
+          <button type="button" class="clip-play" aria-label="Play the camera streams" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>
+          <span class="feed-tag feed-tag--l">overhead 800×600</span>
+          <span class="feed-tag feed-tag--r">wrist 640×480</span>
         </div>
-        <figcaption>The recording session, time-lapsed. Every one of the 160 episodes was a person on the leader arm.</figcaption></figure></li>
-    </ul>
-    <div class="strip-progress" aria-hidden="true"><i id="strip-bar"></i></div>
+        <figcaption>The actual observation space, from episode 0 of the training set.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div id="policies" class="chapter chapter--step chapter--policies" data-chapter="policies" tabindex="-1" aria-labelledby="policies-title">
+    <div class="panel">
+      <h2 id="policies-title" class="display">Two policies, the same 160 episodes.</h2>
+      <div class="seg" role="group" aria-label="Choose a policy">
+        <button type="button" class="seg-btn" data-policy="act" aria-pressed="true">ACT</button>
+        <button type="button" class="seg-btn" data-policy="smolvla" aria-pressed="false">SmolVLA</button>
+      </div>
+      <div class="specs" id="specs-act" data-spec="act">
+        <p class="spec-lead">About 52M parameters</p>
+        <ul><li>ResNet18 vision backbone</li><li>Predicts 100 actions at a time</li><li>42,308 training steps</li><li>Learning rate 1e-5, constant</li></ul>
+      </div>
+      <div class="specs" id="specs-smolvla" data-spec="smolvla" hidden>
+        <p class="spec-lead">About 450M parameters</p>
+        <ul><li>Pretrained vision-language model, vision encoder frozen</li><li>Predicts 50 actions at a time</li><li>20,000 training steps</li><li>Learning rate 1e-4, warmup then decay</li></ul>
+      </div>
+      <div class="policies-hud"></div>
+      <p class="caption">Both trained on one RTX 3060; both run on Apple Silicon. The trail follows the reconstruction’s scripted path, sized to each policy’s chunk length (100 vs 50). It illustrates chunking; it is not policy output.</p>
+    </div>
   </div>
 </section>
 
-<section id="touch" class="chapter" data-chapter="touch" tabindex="-1">
-  <div class="panel panel--wide">
-    <h2 id="touch-title" class="display">The servos already report load.</h2>
-    <p>Every STS3215 reports its own load. Pressed by hand on the bench, peaks ran from 48 to 152 by joint. That makes it a candidate touch signal with no added hardware.</p>
-    <figure class="bars">
-      <figcaption id="bars-title">Peak servo load under hand pressure, bench test (raw register units)</figcaption>
-      <ul aria-labelledby="bars-title">
-        <li style="--v:92"><span class="b-name">Shoulder pan</span><span class="b-bar"><i></i></span><span class="num b-val">92</span></li>
-        <li style="--v:152"><span class="b-name">Shoulder lift</span><span class="b-bar"><i></i></span><span class="num b-val">152</span></li>
-        <li style="--v:112"><span class="b-name">Elbow flex</span><span class="b-bar"><i></i></span><span class="num b-val">112</span></li>
-        <li style="--v:48"><span class="b-name">Wrist flex</span><span class="b-bar"><i></i></span><span class="num b-val">48</span></li>
-        <li style="--v:52"><span class="b-name">Wrist roll</span><span class="b-bar"><i></i></span><span class="num b-val">52</span></li>
-        <li style="--v:56"><span class="b-name">Gripper</span><span class="b-bar"><i></i></span><span class="num b-val">56</span></li>
+<section id="proof" class="group" aria-label="The test and the proof">
+  <div id="test" class="chapter chapter--step chapter--test" data-chapter="test" tabindex="-1" aria-labelledby="test-title">
+    <div class="panel">
+      <p class="giant-cell" aria-hidden="true">B2</p>
+      <h2 id="test-title" class="display">It never saw B2. It picked the noodle up anyway.</h2>
+      <p>B2 appears in none of the 160 training episodes. So doing the job there shows the policy learned the task itself, rather than memorizing the moves it was shown. Both policies were tried there several times, and every attempt succeeded.</p>
+    </div>
+  </div>
+
+  <div id="film" class="chapter chapter--film" data-chapter="film" aria-labelledby="film-title">
+    <div class="panel film-head">
+      <h3 id="film-title" class="film-title">Four real runs, all successful</h3>
+      <p class="caption">Filmed end to end, cell called out before each run: two in B2, two in cells the arm trained on. These are not the scored trials.</p>
+      <p class="swipe-hint" aria-hidden="true">Swipe for more runs</p>
+    </div>
+    <div class="strip-wrap">
+      <div class="strip-nav">
+        <button type="button" class="nav-btn" id="strip-prev" aria-label="Previous run"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button type="button" class="nav-btn" id="strip-next" aria-label="Next run"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <ul class="strip" id="strip" aria-label="Real runs">
+        <li class="reel reel--held" data-cell="B2"><figure>
+          <div class="frame"><video src="media/act-b2.mp4" poster="media/poster-act-b2.jpg" playsinline preload="none" width="540" height="960" aria-label="ACT picking up the noodle from B2"><track kind="captions" srclang="en" label="English" src="media/act-b2.vtt"></video><button type="button" class="reel-play" aria-label="Play ACT in B2 with sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+          <figcaption><span class="tag tag--held">held out</span><strong>ACT</strong> in B2</figcaption></figure></li>
+        <li class="reel reel--held" data-cell="B2"><figure>
+          <div class="frame"><video src="media/smolvla-b2.mp4" poster="media/poster-smolvla-b2.jpg" playsinline preload="none" width="540" height="960" aria-label="SmolVLA-450M picking up the noodle from B2"><track kind="captions" srclang="en" label="English" src="media/smolvla-b2.vtt"></video><button type="button" class="reel-play" aria-label="Play SmolVLA-450M in B2 with sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+          <figcaption><span class="tag tag--held">held out</span><strong>SmolVLA-450M</strong> in B2</figcaption></figure></li>
+        <li class="reel reel--trained" data-cell="A2"><figure>
+          <div class="frame"><video src="media/act-a2.mp4" poster="media/poster-act-a2.jpg" playsinline preload="none" width="540" height="960" aria-label="ACT picking up the noodle from A2"><track kind="captions" srclang="en" label="English" src="media/act-a2.vtt"></video><button type="button" class="reel-play" aria-label="Play ACT in A2 with sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+          <figcaption><span class="tag tag--trained">trained</span><strong>ACT</strong> in A2</figcaption></figure></li>
+        <li class="reel reel--trained" data-cell="C3"><figure>
+          <div class="frame"><video src="media/smolvla-c3.mp4" poster="media/poster-smolvla-c3.jpg" playsinline preload="none" width="540" height="960" aria-label="SmolVLA-450M picking up the noodle from C3"><track kind="captions" srclang="en" label="English" src="media/smolvla-c3.vtt"></video><button type="button" class="reel-play" aria-label="Play SmolVLA-450M in C3 with sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button></div>
+          <figcaption><span class="tag tag--trained">trained</span><strong>SmolVLA-450M</strong> in C3</figcaption></figure></li>
       </ul>
-      <p class="caption bars-note">Single presses; values include pose-dependent static torque, so joints aren’t directly comparable. The glow on the 3D servos is drawn from these numbers — it isn’t live sensing.</p>
-    </figure>
-    <p>It isn’t in either policy yet. The readings come in steps of 4, light contact reads exactly zero, and every value includes pose-dependent static torque, not contact alone. Phase 3 wires it in on a contact-rich insertion task — with a go/no-go on whether touch actually beats vision.</p>
-    <ol class="roadmap">
-      <li class="is-done"><span class="ph">Phase 0</span><span class="ph-t">Repo, environment, pipeline on a public dataset</span><span class="ph-s">done</span></li>
-      <li class="is-done"><span class="ph">Phase 1</span><span class="ph-t">Arm bring-up, leader mirrors follower</span><span class="ph-s">done</span></li>
-      <li class="is-done"><span class="ph">Phase 2</span><span class="ph-t">Vision-only baseline, ACT and SmolVLA</span><span class="ph-s">done</span></li>
-      <li class="is-next"><span class="ph">Phase 3</span><span class="ph-t">Tactile integration and an insertion task</span><span class="ph-s">next</span></li>
-      <li><span class="ph">Phase 4+</span><span class="ph-t">Force control, on-device inference, dataset release</span><span class="ph-s">not started</span></li>
-    </ol>
+      <div class="strip-progress" aria-hidden="true"><i id="strip-bar"></i></div>
+    </div>
+  </div>
+</section>
+
+<section id="outcome" class="group" aria-label="Results, limits and what’s next">
+  <div id="results" class="chapter chapter--step" data-chapter="results" tabindex="-1" aria-labelledby="results-title">
+    <div class="panel panel--wide">
+      <h2 id="results-title" class="display results-title"><span>18 of 20.</span> <span>16 of 20.</span></h2>
+      <p class="task">20 autonomous trials per policy, spread across the whole grid, B2 included. A trial counts only if the noodle ends up in the cup.</p>
+      <ol class="rows" id="rows">
+        <li class="row" data-k="18">
+          <div class="row-head"><h3>ACT</h3><p class="row-score"><span class="num">18</span> of 20</p></div>
+          <div class="dots" aria-hidden="true"></div>
+          <div class="interval" role="img" aria-label="ACT: 18 of 20 trials succeeded, 90 percent. 95 percent Clopper–Pearson interval 68 to 99 percent.">
+            <div class="track"><span class="range" style="--lo:68;--hi:99"></span><span class="point" style="--pt:90"></span></div>
+            <div class="ticks"><span>0</span><span>50</span><span>100%</span></div>
+            <p class="ci"><span><span class="num">90%</span> estimate</span><span class="ci-r">95% interval <span class="num">68–99%</span></span></p>
+          </div>
+        </li>
+        <li class="row" data-k="16">
+          <div class="row-head"><h3>SmolVLA-450M</h3><p class="row-score"><span class="num">16</span> of 20</p></div>
+          <div class="dots" aria-hidden="true"></div>
+          <div class="interval" role="img" aria-label="SmolVLA-450M: 16 of 20 trials succeeded, 80 percent. 95 percent Clopper–Pearson interval 56 to 94 percent.">
+            <div class="track"><span class="range" style="--lo:56;--hi:94"></span><span class="point" style="--pt:80"></span></div>
+            <div class="ticks"><span>0</span><span>50</span><span>100%</span></div>
+            <p class="ci"><span><span class="num">80%</span> estimate</span><span class="ci-r">95% interval <span class="num">56–94%</span></span></p>
+          </div>
+        </li>
+      </ol>
+      <p>In plain words: 18 of 20 is consistent with a true success rate anywhere from 68% to 99%, and 16 of 20 with 56% to 94% (Clopper–Pearson intervals). They overlap heavily, so both work and 20 trials can’t say which is better.</p>
+      <p class="caption">Run on the physical arm and scored by hand. No per-trial log exists, so the dots show counts, not order.</p>
+    </div>
+  </div>
+
+  <div id="limits" class="chapter chapter--step chapter--limits" data-chapter="limits" tabindex="-1" aria-labelledby="limits-title">
+    <div class="panel">
+      <h2 id="limits-title" class="display">What this doesn’t show.</h2>
+      <ul class="limits">
+        <li>Nothing about touch. Both policies are vision-only; no tactile data was recorded, trained on, or evaluated.</li>
+        <li>Not a ranking of ACT against SmolVLA. Separating 90% from 80% would take on the order of a hundred trials each.</li>
+        <li>One task, one object, one lighting setup, and a held-out cell surrounded by trained ones. Nothing here tests reaching outside the grid.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="touch" class="chapter chapter--step chapter--next" data-chapter="touch" tabindex="-1" aria-labelledby="next-title">
+    <div class="panel panel--wide">
+      <h2 id="next-title" class="display">What’s next: touch. Not built yet.</h2>
+      <p>Touch is Phase 3, and it isn’t in either policy. Both are the vision-only baseline it has to beat. Every STS3215 servo reports its own load, which makes it a candidate touch signal with no added hardware.</p>
+      <figure class="bars">
+        <figcaption id="bars-title">Peak servo load under hand pressure, bench test (raw register units)</figcaption>
+        <ul aria-labelledby="bars-title">
+          <li style="--v:92"><span class="b-name">Shoulder pan</span><span class="b-bar"><i></i></span><span class="num b-val">92</span></li>
+          <li style="--v:152"><span class="b-name">Shoulder lift</span><span class="b-bar"><i></i></span><span class="num b-val">152</span></li>
+          <li style="--v:112"><span class="b-name">Elbow flex</span><span class="b-bar"><i></i></span><span class="num b-val">112</span></li>
+          <li style="--v:48"><span class="b-name">Wrist flex</span><span class="b-bar"><i></i></span><span class="num b-val">48</span></li>
+          <li style="--v:52"><span class="b-name">Wrist roll</span><span class="b-bar"><i></i></span><span class="num b-val">52</span></li>
+          <li style="--v:56"><span class="b-name">Gripper</span><span class="b-bar"><i></i></span><span class="num b-val">56</span></li>
+        </ul>
+        <p class="caption bars-note">Single presses; values include pose-dependent static torque, so joints aren’t directly comparable. The glow on the 3D servos is drawn from these numbers. It isn’t live sensing.</p>
+      </figure>
+    </div>
   </div>
 </section>
 
 <section id="sandbox" class="chapter" data-chapter="sandbox" tabindex="-1">
   <div class="panel" data-lenis-prevent>
-    <h2 id="sandbox-title" class="display">Pick a cell.</h2>
-    <p class="sandbox-intro">Tap any cell, B2 included, and the reconstructed arm will run the task there, or click a tile in the scene. Or click anywhere on the table to put the noodle there.</p>
+    <h2 id="sandbox-title" class="display">Try it yourself: pick a cell.</h2>
+    <p class="sandbox-intro">Choose where the noodle starts and watch the arm do the job. Tap any cell, B2 included, click a tile in the scene, or click anywhere on the table to put the noodle there.</p>
     <div class="sandbox-row">
     <div class="picker-wrap">
       <p class="picker-arm" aria-hidden="true">arm side</p>
@@ -315,19 +346,29 @@ setTimeout(failsafe, 9000);
     </div>
     <p class="picker-status" id="picker-status" role="status" aria-live="polite">Choose a cell.</p>
     <button type="button" class="btn btn--ghost save-btn" id="save-frame" hidden>Save this frame</button>
-    <p class="disclaimer">This is a kinematic simulation built from the SO-101’s URDF — not the trained policy. The real runs are in the footage above.</p>
+    <p class="disclaimer">This is a kinematic simulation built from the SO-101’s URDF, not the trained policy. The real runs are above.</p>
   </div>
 </section>
 
-<section id="limits" class="chapter chapter--limits" data-chapter="limits" tabindex="-1">
-  <div class="panel">
-    <h2 id="limits-title" class="display">What this doesn’t show.</h2>
-    <ul class="limits">
-      <li>Nothing about touch. Both policies are vision-only; no tactile channel was recorded, trained on, or evaluated.</li>
-      <li>Not a ranking of ACT against SmolVLA. Twenty trials can’t separate 90% from 80%.</li>
-      <li>One task, one object, one lighting setup.</li>
-      <li>The scored trials have no per-trial record. Counts were tallied by hand at the time.</li>
-    </ul>
+<section id="next" class="group" aria-label="What I built">
+  <!-- "What I built" reuses the results shot: the arm looping calmly while the list is read. -->
+  <div id="built" class="chapter chapter--step chapter--built" data-chapter="results" tabindex="-1" aria-labelledby="built-title">
+    <div class="panel panel--wide">
+      <h2 id="built-title" class="display">What I built.</h2>
+      <ul class="built">
+        <li><strong>Hardware.</strong> An SO-101 leader and follower arm, with overhead and wrist cameras.</li>
+        <li><strong>Data.</strong> 160 teleoperated demonstrations, with one grid cell held out on purpose.</li>
+        <li><strong>Training.</strong> ACT and SmolVLA-450M on one RTX 3060, with LeRobot.</li>
+        <li><strong>Evaluation.</strong> 20 autonomous trials per policy on the real arm, plus the held-out cell.</li>
+        <li><strong>Tooling.</strong> Recording, training and evaluation scripts, and a test suite CI runs on every pull request.</li>
+      </ul>
+      <p class="caption built-note">It builds on the open-source SO-101 design, a pretrained SmolVLA and the LeRobot pipeline.</p>
+      <div class="actions">
+        <a class="btn btn--primary" href="https://github.com/vishal-naveen/TactileVLA-Edge" rel="noopener">GitHub</a>
+        <a class="btn btn--ghost" href="https://vishal-naveen.github.io/TactileVLA-Edge/" rel="noopener">Project site</a>
+        <a class="btn btn--ghost" href="https://github.com/vishal-naveen/TactileVLA-Edge/blob/main/docs/results.md" rel="noopener">Full results</a>
+      </div>
+    </div>
   </div>
 
 </section>
@@ -338,7 +379,6 @@ setTimeout(failsafe, 9000);
     <p class="footer-name">Vishal Naveen</p>
     <p>Code Apache-2.0, hardware CERN-OHL-P v2</p>
     <p>SO-101 model: TheRobotStudio/SO-ARM100, Apache-2.0</p>
-    <p><a href="https://github.com/vishal-naveen/TactileVLA-Edge">github.com/vishal-naveen/TactileVLA-Edge</a></p>
   </footer>
 
 <script type="module" src="js/main.js"></script>

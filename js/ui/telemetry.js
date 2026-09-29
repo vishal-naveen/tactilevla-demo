@@ -206,8 +206,8 @@ export function initTelemetry(stage) {
   function start() { if (!raf) raf = requestAnimationFrame(tick); }
   const safeState = (real) => { try { return real.getJointState(); } catch { return null; } };
 
-  // 3D angle arcs on in sandbox/policies; phase words on in hero + sandbox; off elsewhere
-  const want = { gauges: false, markers: true };
+  // 3D angle arcs on in sandbox/policies; phase words on in the sandbox only (the hero stays plain)
+  const want = { gauges: false, markers: false };
   const sent = { gauges: null, markers: null };
   function flush() {
     const real = stage.real;
@@ -217,7 +217,7 @@ export function initTelemetry(stage) {
   }
   document.addEventListener('chapterchange', (e) => {
     want.gauges = e.detail === 'sandbox' || e.detail === 'policies';
-    want.markers = e.detail === 'sandbox' || e.detail === 'hero';
+    want.markers = e.detail === 'sandbox';
     flush();
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && visibleCount > 0) start(); });

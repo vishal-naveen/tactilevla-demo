@@ -2,6 +2,7 @@
 // stage's pulsing ghost target (stage.setPlaceHint / getPlaceHintScreenPos, both feature-detected) and
 // retires for the visit the first time anything runs in the sandbox.
 import { $, reducedQuery } from './env.js';
+import { STACKED_QUERY } from '../stage/stacked.js';
 
 const KEY = 'tvla.placeHint.dismissed';
 const DELAY_MS = 600;
@@ -21,7 +22,7 @@ const ICON = `<svg class="place-hint__icon" viewBox="2 2 20 20" width="26" heigh
 export function initPlaceHint(stage) {
   const root = document.documentElement;
   const coarse = matchMedia('(pointer: coarse)');
-  const narrow = matchMedia('(max-width: 820px)');
+  const narrow = matchMedia(STACKED_QUERY);
 
   const wrap = document.createElement('div');
   wrap.className = 'place-hint';

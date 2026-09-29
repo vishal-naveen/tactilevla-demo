@@ -12,6 +12,8 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
 import { PAL, mixL, isLightPal } from './palette.js'
 import { HZ, PHASE_NAMES } from './tasks.js'
+import { cellCenter, GRID } from './layout.js'
+import { CELLS } from './protocol.js'
 
 const N = PHASE_NAMES.length
 const WORD_SCALE = 0.00046 // world metres per CSS px of the word's own layout
@@ -20,8 +22,17 @@ const S_ACTIVE = 1.6 // the active word leads: this much bigger than the quiet o
 const A_UP = 0.42, A_DONE = 0.6 // resting opacity of upcoming / finished words
 const PULSE_S = 0.8 // a node's "gripper passed" pulse lasts this long (task seconds)
 const COMET_S = 0.6 // travelled path fades from the head to its resting level over this long
-const SLOT_DIRS = Array.from({ length: 12 }, (_, i) => { const a = (-Math.PI / 2) + (i * Math.PI) / 6; return [Math.cos(a), Math.sin(a)] }) // 12 directions, starting "up"
-const SLOT_RINGS = [1, 1.85] // gap multipliers: near, far
+const N_DIRS = 16
+const SLOT_DIRS = Array.from({ length: N_DIRS }, (_, i) => { const a = (-Math.PI / 2) + (i * 2 * Math.PI) / N_DIRS; return [Math.cos(a), Math.sin(a)] }) // 16 directions, starting "up"
+const SLOT_RINGS = [1, 1.3, 1.6] // gap multipliers: near .. far (a far ring is a last resort: see RING_COST)
+const N_SLOTS = N_DIRS * SLOT_RINGS.length
+const HARD = 3000 // a slot at or above this breaks a hard rule (keep-out zone, viewport, another word): the word is not shown there
+const OK_ACTIVE = 2500, OK_QUIET = 1000 // ...and above these the word is hidden rather than placed badly (the active word may cover a label; a quiet one may not)
+const KEEP_MARGIN = 12 // px of air around the page's measured text
+const MAX_LAG = 40 // a word never trails its target by more than this many px (low frame rates, camera flights)
+const RING_COST = 34 // extra cost per ring step, so a word only drifts away from its node when the near slots are taken
+const MIN_WORD_PX = 10, MAX_BOOST = 1.4 // quiet-word height floor (px) and how far it may scale to reach it
+const REF_SPREAD = 568 // on-screen diagonal (px) of the phase nodes on a 1440x900 desktop: the size the slot gaps were tuned at
 
 // Low-specificity defaults so the page's own .stage-phase styles win without !important.
 const BASE_CSS = `
@@ -122,6 +133,7 @@ function spring(o, x, v, target, omega, dt) {
   o[v] = (o[v] - omega * c * dt) * e
 }
 const clamp01 = (x) => Math.min(1, Math.max(0, x))
+const rectHits = (l, t, r, b, k) => l < k[2] && r > k[0] && t < k[3] && b > k[1]
 
 export function createPhaseMarkers({ scene, canvas, camera, rig }) {
   if (!document.getElementById('stage-phase-base')) {
@@ -211,18 +223,22 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
     cssScene.add(obj)
     return {
       ph, el, bar, obj, cls: '', w: 0, h: 0, pw: 0, ph_: 0,
-      a: 0, av: 0, k: 0, kv: 0, s: 1, // opacity, active amount (0..1) - both spring-smoothed
+      a: 0, av: 0, k: 0, kv: 0, s: 1, boost: 1, // opacity, active amount (0..1) - both spring-smoothed
       px: null, py: null, vx: 0, vy: 0, slot: -1, slotT: -9, // on-screen centre (spring) and the chosen layout slot
+      vis: 0, fit: false, fitT: 0, tx: 0, ty: 0, // vis: 0..1 shown-ness (a word with no free room is hidden); fit: has a valid slot now
       lastK: -1, lastBar: -1, lastOp: '', rect: [0, 0, 0, 0],
     }
   })
   const clicks = []
   const state = { interactive: false, plan: null, master: 0, shown: false, headA: 0, headAv: 0 }
 
-  const _v = new THREE.Vector3(), _d = new THREE.Vector3(), _f = new THREE.Vector3(), _c = new THREE.Vector3(), _h = new THREE.Vector3()
+  const _v = new THREE.Vector3(), _d = new THREE.Vector3(), _f = new THREE.Vector3(), _c = new THREE.Vector3(), _h = new THREE.Vector3(), _t = new THREE.Vector3()
+  const tilePx = new Float32Array(CELLS.length * 8) // projected corners of the nine table tiles
+  let safe = null // the page's measured text rect {left, top, right, bottom} (viewport CSS px) or null
   const anchorPx = words.map(() => [0, 0, 0]) // x, y, depth
   const tmp = [0, 0, 0]
   let sizeW = 1, sizeH = 1, lastDpr = 0
+  let sceneK = 1 // 0.4..1: on-screen size of the phase nodes relative to the desktop layout
   let sizesFor = null
   let time = 0
   let pathPx = new Float32Array(0) // projected path samples (x,y pairs)
@@ -233,7 +249,7 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
     state.plan = plan
     state.master = 0 // words fade in for the new task
     state.headA = 0
-    for (const w of words) { w.a = 0; w.av = 0; w.k = 0; w.kv = 0; w.s = 1; w.px = null; w.slot = -1; w.slotT = -9; w.lastK = -1; w.lastBar = -1 }
+    for (const w of words) { w.a = 0; w.av = 0; w.k = 0; w.kv = 0; w.s = 1; w.px = null; w.slot = -1; w.slotT = -9; w.lastK = -1; w.lastBar = -1; w.vis = 0; w.fit = false }
     if (ribbon) { ribbon.removeFromParent(); ribbon.geometry.dispose(); ribbon = null }
     if (!plan) return
     nSeg = plan.tcpPath.length / 3 - 1
@@ -311,30 +327,73 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
   }
 
   // ---- layout: deterministic slot picker ----
-  function slotCost(i, si, prefX, prefY, gap, hw, hh, placed, bounds) {
-    const dir = SLOT_DIRS[si % 12], ring = SLOT_RINGS[(si / 12) | 0]
+  // Hard rules (cost >= HARD, the word is not shown there): the page's measured text keep-out zone (for the word AND its leader),
+  // the viewport / top bar / scene bottom, and every other word. Soft rules: cell labels and foreign nodes (fatal for a quiet
+  // word, tolerated for the active one), then the grid tiles, the path and the arm, then distance from the node.
+  const inRect = (x, y, k) => x > k[0] && x < k[2] && y > k[1] && y < k[3]
+  function segHitsRect(x0, y0, x1, y1, k) { // Liang-Barsky: does the segment touch the rect?
+    let t0 = 0, t1 = 1
+    const dx = x1 - x0, dy = y1 - y0
+    const P = [-dx, dx, -dy, dy], Q = [x0 - k[0], k[2] - x0, y0 - k[1], k[3] - y0]
+    for (let i = 0; i < 4; i++) {
+      if (P[i] === 0) { if (Q[i] < 0) return false } else {
+        const r = Q[i] / P[i]
+        if (P[i] < 0) { if (r > t1) return false; if (r > t0) t0 = r } else { if (r < t0) return false; if (r < t1) t1 = r }
+      }
+    }
+    return true
+  }
+  function inTile(x, y, ti) { // convex quad, corners in order
+    const o = ti * 8
+    let sgn = 0
+    for (let e = 0; e < 4; e++) {
+      const ax = tilePx[o + e * 2], ay = tilePx[o + e * 2 + 1], bx = tilePx[o + ((e + 1) % 4) * 2], by = tilePx[o + ((e + 1) % 4) * 2 + 1]
+      const c = (bx - ax) * (y - ay) - (by - ay) * (x - ax)
+      if (c !== 0) { if (sgn === 0) sgn = c > 0 ? 1 : -1; else if ((c > 0 ? 1 : -1) !== sgn) return false }
+    }
+    return true
+  }
+
+  function slotCost(i, si, prefX, prefY, gap, hw, hh, placed, bounds, act) {
+    const dir = SLOT_DIRS[si % N_DIRS], ring = SLOT_RINGS[(si / N_DIRS) | 0]
     const dx = dir[0], dy = dir[1]
     const tEdge = Math.min(hw / Math.max(1e-3, Math.abs(dx)), hh / Math.max(1e-3, Math.abs(dy)))
     const off = tEdge + gap * ring
-    const cx = anchorPx[i][0] + dx * off, cy = anchorPx[i][1] + dy * off
+    const ax = anchorPx[i][0], ay = anchorPx[i][1]
+    const cx = ax + dx * off, cy = ay + dy * off
     const padX = 5, padY = 3
     let cost = 0
-    // hard bounds: the page's text column, top nav, viewport
     const L = cx - hw, R = cx + hw, T = cy - hh, B = cy + hh
-    if (L < bounds.minX + 6) cost += 3000 + (bounds.minX + 6 - L)
-    if (R > sizeW - 8) cost += 3000 + (R - sizeW + 8)
-    if (T < 84) cost += 3000 + (84 - T)
-    if (B > bounds.maxY - 8) cost += 3000 + (B - bounds.maxY + 8)
-    // other words (already placed)
+    // hard: the page's text (measured keep-out zone; word and leader), top nav, viewport, scene bottom
+    const keeps = bounds.keep
+    if (keeps) for (let q = 0; q < keeps.length; q++) {
+      const k = keeps[q]
+      if (L < k[2] && R > k[0] && T < k[3] && B > k[1]) { cost += HARD + 1000; break }
+      if (segHitsRect(ax, ay, cx, cy, k)) { cost += HARD + 500; break }
+    }
+    if (L < 6) cost += HARD + (6 - L)
+    if (R > sizeW - 8) cost += HARD + (R - sizeW + 8)
+    if (T < 84) cost += HARD + (84 - T)
+    if (B > bounds.maxY - 8) cost += HARD + (B - bounds.maxY + 8)
+    // hard: other words (already placed)
     for (let j = 0; j < placed.length; j++) {
       const r = placed[j]
       const ox = hw + r[2] + padX - Math.abs(cx - r[0]), oy = hh + r[3] + padY - Math.abs(cy - r[1])
-      if (ox > 0 && oy > 0) cost += 1200 + Math.min(ox, oy) * 4
+      if (ox > 0 && oy > 0) cost += HARD + Math.min(ox, oy) * 4
     }
-    // cell labels / other phase nodes
+    // soft: cell labels / other phase nodes (the active word may cover one if it must, a quiet word is hidden instead)
     for (let j = 0; j < obst.length; j++) {
       const o = obst[j]
-      if (o.x1 > L - 3 && o.x0 < R + 3 && o.y1 > T - 2 && o.y0 < B + 2) cost += o.node ? 400 : 700
+      if (o.node && o.i === i) continue
+      if (o.x1 > L - 3 && o.x0 < R + 3 && o.y1 > T - 2 && o.y0 < B + 2) cost += o.node ? (act ? 400 : 1200) : (act ? 700 : 1500)
+    }
+    // the grid tiles underfoot: a tie-break between directions, never worth a far slot
+    for (let ti = 0; ti < CELLS.length; ti++) {
+      if (inTile(cx, cy, ti)) cost += 5
+      if (inTile(L, T, ti)) cost += 3
+      if (inTile(R, T, ti)) cost += 3
+      if (inTile(L, B, ti)) cost += 3
+      if (inTile(R, B, ti)) cost += 3
     }
     // the path and the arm: staying clear reads cleaner, but is only a preference
     for (let p = 0; p < pathPx.length; p += 2) {
@@ -347,12 +406,12 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
     }
     // preference: the design direction (away from the base, leaning up), and being near the node
     const dot = dx * prefX + dy * prefY
-    cost += (1 - dot) * 16 + (ring - 1) * 28
+    cost += (1 - dot) * 16 + ((si / N_DIRS) | 0) * RING_COST
     return { cost, cx, cy }
   }
 
   const order = []
-  function layoutWords(mode, armPts, bounds) {
+  function layoutWords(mode, armPts, bounds, activeIdx) {
     // project the arm chain (as sample points along each link) and the path (every 5th sample)
     let ap = 0
     if (armPx.length < (armPts.length - 1) * 8 * 2) armPx = new Float32Array((armPts.length - 1) * 8 * 2)
@@ -368,42 +427,58 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
       _h.fromArray(plan.tcpPath, v * 3)
       project(_h, tmp); pathPx[pp++] = tmp[0]; pathPx[pp++] = tmp[1]
     }
+    // the table tiles on screen (a soft "stay off the grid" preference)
+    for (let c = 0; c < CELLS.length; c++) {
+      cellCenter(CELLS[c], _h)
+      for (let e = 0; e < 4; e++) {
+        _t.set(_h.x + (e < 2 ? -1 : 1) * GRID.d * 0.5, 0, _h.z + (e === 0 || e === 3 ? -1 : 1) * GRID.w * 0.5)
+        project(_t, tmp); tilePx[c * 8 + e * 2] = tmp[0]; tilePx[c * 8 + e * 2 + 1] = tmp[1]
+      }
+    }
     // base of the arm on screen: where "away from the arm" starts
     project(armPts[0], tmp)
     const bx = tmp[0], by = tmp[1]
     // Every word reserves room for its ACTIVE size, whatever it is doing now, so the layout does not depend on which phase
     // is active: nothing is re-laid-out at a phase boundary. A quiet word sits at the node end of its reserved slot and
     // grows outward along the slot's direction.
+    // Placement priority: the active word first, then its neighbours outwards. When the free room beside the path cannot
+    // hold all seven, the ones that do not fit are simply hidden - the important ones stay.
     order.length = 0
     for (let i = 0; i < N; i++) order.push(i)
+    if (activeIdx >= 0) order.sort((a, b) => (Math.abs(a - activeIdx) - (a < activeIdx ? 0.5 : 0)) - (Math.abs(b - activeIdx) - (b < activeIdx ? 0.5 : 0)))
     const placed = []
+    // The slot gap follows how big the scene is on screen (phones / narrow windows draw it much smaller), so a word stays
+    // a short leader away from its node instead of a desktop-sized 45-85 px.
     const gap = mode === 'full' ? 34 : 26
+    const g = (gap * 1.2 + 4) * sceneK
     for (const i of order) {
       const wd = words[i]
       const sT = S_ACTIVE
-      const hw = (wd.w * WORD_SCALE * sT * wd.pxPerM) * 0.5, hh = (wd.h * WORD_SCALE * sT * wd.pxPerM) * 0.5
+      const act = i === activeIdx
+      const hw = (wd.w * WORD_SCALE * sT * wd.boost * wd.pxPerM) * 0.5, hh = (wd.h * WORD_SCALE * sT * wd.boost * wd.pxPerM) * 0.5
       let pxv = anchorPx[i][0] - bx, pyv = anchorPx[i][1] - by
       const pl = Math.hypot(pxv, pyv)
       if (pl < 24) { pxv = 1; pyv = -0.6 } else { pxv /= pl; pyv /= pl }
       pyv -= 0.5
       const ql = Math.hypot(pxv, pyv); pxv /= ql; pyv /= ql
       let best = -1, bestCost = Infinity
-      for (let si = 0; si < 24; si++) {
-        const r = slotCost(i, si, pxv, pyv, gap * 1.2 + 4, hw, hh, placed, bounds)
+      for (let si = 0; si < N_SLOTS; si++) {
+        const r = slotCost(i, si, pxv, pyv, g, hw, hh, placed, bounds, act)
         let c = r.cost
-        if (si === wd.slot) {
+        if (si === wd.slot && c < HARD) {
           c -= time - wd.slotT < 0.9 ? 160 : 45 // sticky: a new slot must beat the current one clearly, and not too soon
         }
         if (c < bestCost) { bestCost = c; best = si }
       }
       if (best !== wd.slot) { wd.slot = best; wd.slotT = time } // (an invalid slot loses to any valid one despite the sticky bonus)
-      const r = slotCost(i, wd.slot, pxv, pyv, gap * 1.2 + 4, hw, hh, placed, bounds)
+      const r = slotCost(i, wd.slot, pxv, pyv, g, hw, hh, placed, bounds, act)
+      wd.fit = r.cost < (act ? OK_ACTIVE : OK_QUIET)
       // where the word actually sits now: same direction and ring, but measured from its current (smaller) size
-      const dir = SLOT_DIRS[wd.slot % 12], ring = SLOT_RINGS[(wd.slot / 12) | 0]
+      const dir = SLOT_DIRS[wd.slot % N_DIRS], ring = SLOT_RINGS[(wd.slot / N_DIRS) | 0]
       const ahw = wd.pw * 0.5, ahh = wd.ph_ * 0.5
-      const off = Math.min(ahw / Math.max(1e-3, Math.abs(dir[0])), ahh / Math.max(1e-3, Math.abs(dir[1]))) + (gap * 1.2 + 4) * ring
+      const off = Math.min(ahw / Math.max(1e-3, Math.abs(dir[0])), ahh / Math.max(1e-3, Math.abs(dir[1]))) + g * ring
       wd.tx = anchorPx[i][0] + dir[0] * off; wd.ty = anchorPx[i][1] + dir[1] * off
-      placed.push([r.cx, r.cy, hw, hh])
+      if (wd.fit) placed.push([r.cx, r.cy, hw, hh]) // a hidden word reserves nothing
       wd.rect[0] = r.cx; wd.rect[1] = r.cy; wd.rect[2] = hw; wd.rect[3] = hh
     }
   }
@@ -504,8 +579,15 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
       project(plan.phasePts[i], anchorPx[i])
       const wd = words[i]
       wd.pxPerM = h / (2 * Math.max(0.05, anchorPx[i][2]) * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2))
-      wd.pw = wd.w * WORD_SCALE * wd.s * wd.pxPerM // on-screen size now (px)
-      wd.ph_ = wd.h * WORD_SCALE * wd.s * wd.pxPerM
+      // legibility floor: where the scene is drawn small (phones, portrait tablets) the quiet words would be ~8 px tall
+      wd.boost = Math.min(MAX_BOOST, Math.max(1, MIN_WORD_PX / Math.max(1, wd.h * WORD_SCALE * wd.pxPerM)))
+      wd.pw = wd.w * WORD_SCALE * wd.s * wd.boost * wd.pxPerM // on-screen size now (px)
+      wd.ph_ = wd.h * WORD_SCALE * wd.s * wd.boost * wd.pxPerM
+    }
+    {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity
+      for (let i = 0; i < N; i++) { x0 = Math.min(x0, anchorPx[i][0]); x1 = Math.max(x1, anchorPx[i][0]); y0 = Math.min(y0, anchorPx[i][1]); y1 = Math.max(y1, anchorPx[i][1]) }
+      sceneK = Math.min(1, Math.max(0.4, Math.hypot(x1 - x0, y1 - y0) / REF_SPREAD))
     }
     // things to keep clear of: cell label pills, and every node (a word never covers a node that is not its own)
     obst.length = 0
@@ -514,18 +596,35 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
       obst.push({ x0: tmp[0] - 2, x1: tmp[0] + l.w, y0: tmp[1] - l.h * 0.5, y1: tmp[1] + l.h * 0.5, node: false })
     }
     for (let i = 0; i < N; i++) obst.push({ x0: anchorPx[i][0] - 9, x1: anchorPx[i][0] + 9, y0: anchorPx[i][1] - 9, y1: anchorPx[i][1] + 9, node: true, i })
-    layoutWords(mode, armPts, { minX: minX ?? 0, maxY: Math.min(maxY ?? h, h) })
+    // keep-out zone: the page's MEASURED text (plus air); until the page reports one, the old viewport-fraction column edge
+    const keep = safe
+      ? safe.rects.map((r) => [r.left - KEEP_MARGIN, r.top - KEEP_MARGIN, r.right + KEEP_MARGIN, r.bottom + KEEP_MARGIN])
+      : (minX > 0 ? [[-1e4, -1e4, minX, 1e4]] : null)
+    layoutWords(mode, armPts, { keep, maxY: Math.min(maxY ?? h, h) }, activeIdx)
 
     for (let i = 0; i < N; i++) {
       const wd = words[i]
       // own node is not an obstacle for itself (handled through the gap), so it is skipped in slotCost via distance
-      if (wd.px === null) { wd.px = wd.tx; wd.py = wd.ty; wd.vx = 0; wd.vy = 0 }
-      else { spring(wd, 'px', 'vx', wd.tx, 8, dt); spring(wd, 'py', 'vy', wd.ty, 8, dt) }
+      if (wd.px === null || wd.vis < 0.03) { wd.px = wd.tx; wd.py = wd.ty; wd.vx = 0; wd.vy = 0 } // unseen words teleport: they never travel across the page
+      else {
+        spring(wd, 'px', 'vx', wd.tx, 8, dt); spring(wd, 'py', 'vy', wd.ty, 8, dt)
+        const lag = Math.hypot(wd.px - wd.tx, wd.py - wd.ty)
+        if (lag > MAX_LAG) { const f = MAX_LAG / lag; wd.px = wd.tx + (wd.px - wd.tx) * f; wd.py = wd.ty + (wd.py - wd.ty) * f }
+      }
       unproject(wd.px, wd.py, anchorPx[i][2], wd.obj.position)
-      wd.obj.scale.setScalar(WORD_SCALE * wd.s)
-      const op = (wd.a * M).toFixed(3)
+      wd.obj.scale.setScalar(WORD_SCALE * wd.s * wd.boost)
+      // shown-ness: only while a valid slot exists (and stays valid for a moment: no flicker); a word whose CURRENT rect
+      // touches the keep-out zone (it is still travelling, or the text scrolled under it) fades out at once
+      wd.vis = wd.vis ?? 0
+      const cur = !!keep && keep.some((k) => rectHits(wd.px - wd.pw * 0.5, wd.py - wd.ph_ * 0.5, wd.px + wd.pw * 0.5, wd.py + wd.ph_ * 0.5, k))
+      if (!wd.fit) wd.fitT = time
+      const showT = wd.fit && !cur && (time - wd.fitT > 0.25 || wd.k > 0.3) ? 1 : 0
+      wd.vis += (showT - wd.vis) * (1 - Math.exp(-dt * (showT > wd.vis ? 7 : 16)))
+      if (cur) wd.vis = Math.min(wd.vis, 0.25)
+      if (wd.vis < 0.02 && showT === 0) wd.vis = 0
+      const op = (wd.a * M * wd.vis).toFixed(3)
       if (op !== wd.lastOp) { wd.el.style.opacity = op; wd.lastOp = op }
-      const pe = state.interactive && wd.a * M > 0.2 ? 'auto' : 'none'
+      const pe = state.interactive && wd.a * M * wd.vis > 0.2 ? 'auto' : 'none'
       if (wd.el.style.pointerEvents !== pe) wd.el.style.pointerEvents = pe
       // active glow, continuous in k (page CSS still owns the colours; this only adds the lift)
       const kq = Math.round(wd.k * 50) / 50
@@ -549,7 +648,7 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
       const on = endD > start + 2
       unproject(anchorPx[i][0] + ux * start, anchorPx[i][1] + uy * start, anchorPx[i][2], _c).toArray(leadBuf.array, i * 6)
       unproject(anchorPx[i][0] + ux * (on ? endD : start), anchorPx[i][1] + uy * (on ? endD : start), anchorPx[i][2], _c).toArray(leadBuf.array, i * 6 + 3)
-      const li = (0.3 + 0.7 * wd.k) * (on ? 1 : 0)
+      const li = (0.3 + 0.7 * wd.k) * (on ? 1 : 0) * wd.vis
       const ac = PAL.accent, ar = PAL.arc
       const lr = (ar.r + (ac.r - ar.r) * wd.k) * li, lg = (ar.g + (ac.g - ar.g) * wd.k) * li, lb = (ar.b + (ac.b - ar.b) * wd.k) * li
       for (let c = 0; c < 2; c++) { leadCol.array[i * 6 + c * 3] = lr; leadCol.array[i * 6 + c * 3 + 1] = lg; leadCol.array[i * 6 + c * 3 + 2] = lb }
@@ -561,6 +660,18 @@ export function createPhaseMarkers({ scene, canvas, camera, rig }) {
 
   return {
     update, layer,
+    debug: { words, anchorPx, safe: () => safe && { ...safe, rects: safe.rects.map((r) => ({ ...r })) } },
+    /**
+     * The page's measured text rect in viewport CSS px ({left, top, right, bottom}), or null: words and leaders stay out of it.
+     * An optional `rects` array (same shape) lists the separate blocks it is made of (a text column AND, say, a floating readout
+     * card), so the empty space between them stays usable; without it the single rect is the keep-out zone.
+     */
+    setSafeArea(r) {
+      const good = (q) => q && [q.left, q.top, q.right, q.bottom].every(Number.isFinite) && q.right > q.left && q.bottom > q.top
+      if (!good(r)) { safe = null; return }
+      const rects = (Array.isArray(r.rects) ? r.rects.filter(good) : []).map((q) => ({ left: q.left, top: q.top, right: q.right, bottom: q.bottom }))
+      safe = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, rects: rects.length ? rects : [{ left: r.left, top: r.top, right: r.right, bottom: r.bottom }] }
+    },
     onClick(cb) { clicks.push(cb) },
     setSize(w, h) { sizeW = w; sizeH = h; cssRenderer.setSize(w, h) },
     dispose() {

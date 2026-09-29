@@ -50,7 +50,9 @@ section:focus { outline: none; }
 .skip:focus { top: 1rem; }
 
 /* Fixed 3D stage */
-#stage { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+/* Height is the LARGE viewport (lvh): when iOS Safari's toolbar collapses mid-scroll the canvas must not resize, or the renderer
+   reallocates its buffers and the camera re-frames on every toolbar frame (stutter + a visible zoom). Falls back to 100%. */
+#stage { position: fixed; inset: 0 0 auto 0; width: 100%; height: 100%; height: 100lvh; z-index: 0; }
 #stage { transition: opacity 0.8s ease; }
 .no-stage #stage { opacity: 0; pointer-events: none; } /* stays laid out so a slow stage can size itself, then fades in */
 @media (prefers-reduced-motion: reduce) { #stage { transition: none; } }
@@ -132,7 +134,9 @@ p + p { margin-top: 1rem; }
   transition: opacity 0.5s;
 }
 .no-stage .stage-badge, .is-loading .stage-badge, body[data-chapter="film"] .stage-badge, body[data-chapter="limits"] .stage-badge { opacity: 0; }
-@media (max-width: 820px) {
+/* The hero carries its own reconstruction note, and its joint-state card sits where the badge would: hide the badge there. */
+body[data-chapter="hero"] .stage-badge { opacity: 0; }
+@media (max-width: 820px), (orientation: portrait) and (max-width: 1100px) {
   .stage-badge {
     right: auto; left: var(--gutter); top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 0.7rem); font-size: 0.6875rem;
   }
@@ -145,7 +149,7 @@ p + p { margin-top: 1rem; }
 .rail i { position: absolute; inset: 0; background: var(--noodle); transform-origin: 50% 0; transform: scaleY(var(--p, 0)); opacity: 0.9; }
 .rail b { position: absolute; right: 0; width: 6px; height: 1px; background: rgba(var(--ivory-rgb), 0.4); }
 .is-loading .rail, .no-stage .rail { opacity: 0; }
-@media (max-width: 820px) { .rail { display: none; } }
+@media (max-width: 820px), (orientation: portrait) and (max-width: 1100px) { .rail { display: none; } }
 @media (prefers-reduced-motion: reduce) { .stage-badge { transition: none; } }
 
 /* Hardware-acceleration note: a quiet pill, bottom-left, dismissible */
@@ -160,3 +164,8 @@ p + p { margin-top: 1rem; }
 .gl-note button { flex: none; width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: 50%; }
 .gl-note button:hover { background: rgba(var(--ivory-rgb), 0.12); }
 .gl-note svg { width: 1rem; height: 1rem; fill: none; stroke: var(--ivory); stroke-width: 1.8; stroke-linecap: round; }
+
+/* ---- Portrait tablets: the honesty badge rides under the top bar (clear scene), not over the bottom text panels ---- */
+@media (min-width: 600px) and (max-width: 820px) and (min-height: 700px), (orientation: portrait) and (min-width: 821px) and (max-width: 1100px) {
+  .stage-badge { top: calc(var(--topbar-h) + 0.7rem); bottom: auto; font-size: 0.8125rem; padding: 0.5rem 0.85rem; }
+}

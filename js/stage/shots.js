@@ -3,6 +3,7 @@
 import * as THREE from 'three'
 
 import { fitShot } from './framing.js'
+import { C, CAM_MAX_SPEED, CAM_SMOOTH_TIME, blendTarget, compsToPose, poseToComps, smoothDampInto } from './blend.js'
 
 // dir = direction from the subject to the camera; subject = key into the point clouds from subjects.js.
 // Distance, look-at point and lens shift are fitted at runtime so the whole subject stays in the safe area.
@@ -36,6 +37,7 @@ const easeOut2 = (t) => 1 - (1 - t) * (1 - t)
 const lerp = (a, b, t) => a + (b - a) * t
 const shortest = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d }
 
+const LAND_EPS = [0.004, 0.004, 0.004, 0.15, 0.004, 0.004, 0.006, 0.006, 0.006, 0.006] // per comps entry (see blend.js)
 const INTRO_DIST = 1.22 // hero dolly-in: start distance multiplier
 const INTRO_FOV = 6
 const INTRO_S = 2.6
@@ -49,9 +51,12 @@ export class CameraRig {
     this.s = [1, 0.4, -0.6, 0, 0.1, 0, 34, 0, 0]
     this.t = [...this.s]
     this.tw = null // running flight: { from, to, t, dur, lift }
+    this.fol = null // scroll-linked follower (setBlend): { x, v, tgt } comps, critically damped and speed-capped
+    this.bl = { a: 'hero', b: 'hero', t: 0 }
     this.shot = 'hero'
     this.orbitAngle = 0
     this.orbitSpeed = 0
+    this.driftK = 1 // 0..1, eased toward the chapter's drift setting
     this.time = 0
     this.pointer = new THREE.Vector2()
     this.pointerS = new THREE.Vector2()
@@ -69,11 +74,11 @@ export class CameraRig {
   /** Fitted camera for a shot at the current aspect (cached). */
   resolve(id) {
     const shot = SHOTS[id] ?? SHOTS.hero
-    const key = id + '@' + this.aspect.toFixed(3)
+    const key = id + '@' + this.aspect.toFixed(3) + '@' + (this.width | 0)
     let r = this.cache.get(key)
     if (!r) {
       const pts = this.subjects?.[shot.subject]
-      r = pts ? fitShot(shot, pts, this.aspect) : { pos: [1, 0.4, -0.6], look: [0.15, 0.1, 0], fov: shot.fov, dx: 0, dy: 0 }
+      r = pts ? fitShot(shot, pts, this.aspect, undefined, this.width) : { pos: [1, 0.4, -0.6], look: [0.15, 0.1, 0], fov: shot.fov, dx: 0, dy: 0 }
       if (shot.pull) { // pull the camera back along its ray; the lens shift keeps the subject where it was
         const p = new THREE.Vector3(...r.pos), l = new THREE.Vector3(...r.look)
         r = { ...r, pos: p.sub(l).multiplyScalar(shot.pull).add(l).toArray() }
@@ -88,6 +93,7 @@ export class CameraRig {
     const shot = SHOTS[id] ?? SHOTS.hero
     this.shot = id
     this.orbitSpeed = shot.orbit ?? 0
+    this.fol = null
     const r = this.resolve(id)
     this.t = [...r.pos, ...r.look, r.fov, r.dx, r.dy]
     if (snap || this.reduced) { this.s = [...this.t]; this.tw = null; return }
@@ -102,7 +108,60 @@ export class CameraRig {
   remaining() { return this.tw ? this.tw.dur - this.tw.t : 0 }
 
   /** Re-derive targets after a resize (aspect changes framing). */
-  refresh() { this.setShot(this.shot, true) }
+  refresh() {
+    if (this.fol) { // scroll-linked: re-fit both shots and cut to the new target (a resize is not a camera move)
+      this._retarget()
+      this.fol.x.set(this.fol.tgt); this.fol.v.fill(0)
+      compsToPose(this.fol.x, this.s)
+      return
+    }
+    this.setShot(this.shot, true)
+  }
+
+  _arr(id) {
+    const r = this.resolve(id)
+    return r.arr ?? (r.arr = [...r.pos, ...r.look, r.fov, r.dx, r.dy])
+  }
+
+  /**
+   * Scroll-linked camera: aim at the blend of shot `a` -> `b` at fraction t. The rig FOLLOWS that target with a critically
+   * damped, speed-capped spring per component (spherical around the look-at, so it arcs), so it is continuous through
+   * pair changes, fast flings and reversals. There is no fixed-duration flight.
+   */
+  setBlend(a, b, t) {
+    const dom = t >= 0.5 ? b : a
+    if (this.reduced) { this.setShot(dom, true); return }
+    this.shot = dom
+    this.orbitSpeed = (SHOTS[dom] ?? SHOTS.hero).orbit ?? 0
+    this.bl.a = a; this.bl.b = b; this.bl.t = t
+    if (!this.fol) this.fol = { x: poseToComps(this.s), v: new Float64Array(C.N), tgt: new Float64Array(C.N) }
+    this.tw = null
+    this._retarget()
+  }
+
+  _retarget() {
+    const f = this.fol
+    blendTarget(this._arr(this.bl.a), this._arr(this.bl.b), this.bl.t, f.tgt, f.x)
+    compsToPose(f.tgt, this.t)
+  }
+
+  _follow(dt) {
+    const f = this.fol
+    this._retarget() // the fitted shots change with the aspect; the lookups are cached
+    for (let i = 0; i < C.N; i++) smoothDampInto(f.x, f.v, f.tgt[i], i, CAM_SMOOTH_TIME, CAM_MAX_SPEED[i], dt)
+    compsToPose(f.x, this.s)
+  }
+
+  /** True when the follower has arrived at a whole shot (not mid-blend): overlays and OrbitControls wait for this. */
+  landed() {
+    const f = this.fol
+    if (!f) return true
+    if (this.bl.t > 0.02 && this.bl.t < 0.98) return false
+    for (let i = 0; i < C.N; i++) {
+      if (Math.abs(f.x[i] - f.tgt[i]) > LAND_EPS[i] || Math.abs(f.v[i]) > LAND_EPS[i] * 2) return false
+    }
+    return true
+  }
 
   /** Start the hero dolly-in (page calls reveal() after the loader). */
   startIntro() { if (this.intro.t < 0) this.intro.t = this.reduced ? INTRO_S : 0 }
@@ -136,6 +195,7 @@ export class CameraRig {
   update(dt, { drift = true, write = true } = {}) {
     this.time += dt
     if (this.tw) this._flight(dt)
+    else if (this.fol && !this.reduced) this._follow(dt)
     else if (this.reduced) this.s = [...this.t]
     if (this.intro.t >= 0 && this.intro.k > 0) {
       this.intro.t += dt
@@ -165,15 +225,18 @@ export class CameraRig {
       pos.x = look.x + dx * c - dz * sn
       pos.z = look.z + dx * sn + dz * c
     }
-    if (drift && !this.reduced) {
-      const t = this.time
-      pos.x += Math.sin(t * 0.21) * 0.012 + Math.sin(t * 0.53) * 0.004
-      pos.y += Math.sin(t * 0.17 + 1.3) * 0.008
-      pos.z += Math.cos(t * 0.19) * 0.012
+    // drift + parallax fade in and out with the chapter's setting instead of popping when it toggles
+    this.driftK += ((drift && !this.reduced ? 1 : 0) - this.driftK) * (1 - Math.exp(-dt * 2.5))
+    if (this.driftK < 1e-3) this.driftK = 0
+    if (this.driftK > 0) {
+      const t = this.time, k = this.driftK
+      pos.x += (Math.sin(t * 0.21) * 0.012 + Math.sin(t * 0.53) * 0.004) * k
+      pos.y += Math.sin(t * 0.17 + 1.3) * 0.008 * k
+      pos.z += Math.cos(t * 0.19) * 0.012 * k
       // mouse parallax: slide the camera sideways/up a touch
       _r.set(1, 0, 0).applyQuaternion(this.camera.quaternion)
-      pos.addScaledVector(_r, this.pointerS.x * 0.028)
-      pos.y += this.pointerS.y * 0.016
+      pos.addScaledVector(_r, this.pointerS.x * 0.028 * k)
+      pos.y += this.pointerS.y * 0.016 * k
     }
     if (write) {
       this.camera.position.copy(pos)
@@ -188,11 +251,12 @@ export class CameraRig {
     this.camera.setViewOffset(w, h, -dx * w, dy * h, w, h) // also refreshes the projection
   }
 
-  settled() { return !this.tw && this.intro.k < 0.002 }
+  settled() { return !this.tw && this.intro.k < 0.002 && this.landed() }
 
   /** Take over from OrbitControls: continue from the camera's current position. */
   adopt(pos, look) {
     this.s.splice(0, 6, pos.x, pos.y, pos.z, look.x, look.y, look.z)
+    if (this.fol) { poseToComps(this.s, this.fol.x); this.fol.v.fill(0) }
     this.tw = null
     this.orbitAngle = 0
     this.autoOffsetS = 0

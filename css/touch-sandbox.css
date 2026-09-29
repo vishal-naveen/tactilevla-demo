@@ -1,29 +1,22 @@
-/* ---- Touch ---- */
-.bars { margin: 1.8rem 0; }
-.bars figcaption { color: var(--ivory); font-weight: 600; font-size: 0.9375rem; margin-bottom: 1rem; }
-.bars li { display: grid; grid-template-columns: 7.2rem 1fr 3ch; align-items: center; gap: 0.9rem; padding: 0.42rem 0; }
+/* ---- What I built, and what's next ---- */
+.built li { padding: 0.55rem 0; border-top: 1px solid var(--hair); }
+.built li:last-child { border-bottom: 1px solid var(--hair); }
+.built strong { font-weight: 700; margin-right: 0.35em; color: var(--accent-text); }
+.built-note { margin-top: 0.8rem; }
+.chapter--built .actions { margin-top: 1.6rem; }
+.bars { margin: 1.2rem 0 0; }
+.bars figcaption { color: var(--ivory); font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.6rem; }
+.bars ul { display: grid; grid-template-columns: 1fr 1fr; column-gap: 2rem; }
+.bars li { display: grid; grid-template-columns: 5.6rem 1fr 3ch; align-items: center; gap: 0.7rem; padding: 0.3rem 0; }
 .b-name { font-size: 0.9375rem; color: var(--ivory); }
 .b-bar { display: block; height: 0.75rem; background: rgba(var(--ivory-rgb), 0.07); border-radius: 2px; overflow: hidden; }
 .b-bar i { display: block; height: 100%; width: calc(var(--v) / 160 * 100%); background: var(--ivory); opacity: 0.86; transform-origin: 0 50%; transform: scaleX(var(--grow, 1)); }
 .bars li[style*="--v:152"] .b-bar i { background: var(--noodle); opacity: 1; }
 .b-val { text-align: right; font-weight: 650; font-size: 0.9375rem; }
 .bars-note { margin-top: 0.9rem; max-width: 34rem; }
-.roadmap { margin-top: 2rem; position: relative; }
-.roadmap li { display: grid; grid-template-columns: 5.6rem 1fr auto; gap: 0.2rem 1rem; align-items: baseline; padding: 0.85rem 0 0.85rem 1.5rem; border-top: 1px solid var(--hair); position: relative; }
-.roadmap li:last-child { border-bottom: 1px solid var(--hair); }
-.roadmap li::before { content: ""; position: absolute; left: 0; top: 1.35rem; width: 0.55rem; height: 0.55rem; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--dim); }
-.roadmap .is-done::before { background: var(--trained); box-shadow: none; }
-.roadmap .is-next::before { background: var(--noodle); box-shadow: 0 0 0 4px rgba(var(--noodle-rgb), 0.2); }
-.ph { font-weight: 700; font-stretch: 112%; font-variant-numeric: tabular-nums; }
-.ph-t { color: var(--ivory); }
-.ph-s { font-size: var(--fs-caption); color: var(--dim); }
-.is-done .ph-s { color: var(--trained-text); }
-.is-next .ph-s { color: var(--accent-text); font-weight: 650; }
-.is-next .ph { color: var(--accent-text); }
 @media (max-width: 520px) {
+  .bars ul { grid-template-columns: 1fr; }
   .bars li { grid-template-columns: 6.2rem 1fr 3ch; gap: 0.6rem; }
-  .roadmap li { grid-template-columns: 1fr auto; }
-  .ph-t { grid-column: 1 / -1; grid-row: 2; }
 }
 
 /* ---- Sandbox ---- */
@@ -50,24 +43,14 @@
   font-size: 1rem; line-height: 1.55; color: var(--ivory);
 }
 
-/* ---- Limits + footer: a light veil with blur so the 3D stays alive behind ---- */
-.chapter--limits { display: block; padding-bottom: 0; isolation: isolate; }
-.chapter--limits::before { /* blur + veil live behind the text column only; the right stays crisp for the final shot */
-  content: ""; position: absolute; inset: 0 auto 0 0; width: 62%; z-index: -1; pointer-events: none;
-  background: rgba(var(--veil-rgb), 0.55); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12rem), linear-gradient(to right, #000 55%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to bottom, transparent, #000 12rem), linear-gradient(to right, #000 55%, transparent);
-  mask-composite: intersect;
-}
-.chapter--limits > .panel { margin-top: 4rem; }
+/* ---- Limits list + footer ---- */
 .limits li { padding: 1rem 0; border-top: 1px solid var(--hair); }
 .limits li:last-child { border-bottom: 1px solid var(--hair); }
 .footer {
   position: relative; z-index: 1; margin: 0; padding: 3rem var(--gutter) 3.5rem;
   font-size: 0.875rem; color: var(--dim); display: grid; gap: 0.35rem;
 }
-.footer::before { /* continues the limits veil: same feathered column, so the seam disappears */
+.footer::before { /* soft feathered veil behind the credits, same column as the panels above */
   content: ""; position: absolute; inset: 0 auto 0 0; width: 62%; z-index: -1; pointer-events: none;
   background: rgba(var(--veil-rgb), 0.55); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   -webkit-mask-image: linear-gradient(to right, #000 55%, transparent); mask-image: linear-gradient(to right, #000 55%, transparent);
@@ -75,9 +58,7 @@
 .footer p { margin: 0; }
 .footer-name { color: var(--ivory); font-stretch: 100%; font-weight: 700; font-size: 1.125rem; margin-bottom: 0.4rem !important; }
 .footer a { color: var(--ivory); }
-@media (max-width: 820px) {
-  .chapter--limits { padding-top: 6rem; }
-  .chapter--limits > .panel { margin-top: 0; background: none; padding-bottom: 0; }
+@media (max-width: 820px), (orientation: portrait) and (max-width: 1100px) {
   /* Sandbox on phones: the top ~45svh is a clear window onto the 3D scene; the controls live in a bottom sheet below it */
   #sandbox { min-height: 100svh; padding: 0; align-items: flex-end; overflow: clip; }
   #sandbox .panel {
@@ -103,8 +84,7 @@
   .cell-btn { aspect-ratio: 1.5; min-height: 3.25rem; }
 }
 
-@media (max-width: 820px) { /* phones: panels carry their own scrim, so the veil spans the width */
-  .chapter--limits::before { width: 100%; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12rem); mask-image: linear-gradient(to bottom, transparent, #000 12rem); -webkit-mask-composite: source-over; mask-composite: add; }
+@media (max-width: 820px), (orientation: portrait) and (max-width: 1100px) { /* phones: panels carry their own scrim, so the veil spans the width */
   .footer::before { width: 100%; -webkit-mask-image: none; mask-image: none; background: rgba(var(--veil-rgb), 0.8); }
 }
 
@@ -145,4 +125,20 @@
   .ph-cursor, .ph-ripple { animation: none; }
   .ph-ripple { opacity: 0; }
 }
-@media (max-width: 820px) { .place-hint__pill { max-width: min(17rem, calc(100vw - 32px)); font-size: 0.75rem; } }
+@media (max-width: 820px), (orientation: portrait) and (max-width: 1100px) { .place-hint__pill { max-width: min(17rem, calc(100vw - 32px)); font-size: 0.75rem; } }
+
+/* ---- Portrait tablets (stacked layout, >= 600px wide): the phone composition with tablet-sized type and panels. Query = stacked.js isTabletStacked ---- */
+@media (min-width: 600px) and (max-width: 820px) and (min-height: 700px), (orientation: portrait) and (min-width: 821px) and (max-width: 1100px) {
+  #sandbox .panel { max-height: 46svh; padding-top: 1.6rem; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2rem); }
+  #sandbox .display { font-size: 1.9rem; margin-bottom: 0.5rem; }
+  #sandbox .sandbox-intro { order: 1; margin: 0 0 0.9rem; font-size: 1rem; }
+  #sandbox .sandbox-row { order: 2; flex-direction: row; align-items: stretch; gap: 1.4rem; margin: 0 0 0.6rem; }
+  #sandbox .picker-wrap { flex: none; width: 19rem; }
+  #sandbox .sandbox-hud { flex: 1; min-width: 0; display: flex; }
+  #sandbox .cell-btn { min-height: 3rem; height: 3rem; font-size: 1.0625rem; }
+  #sandbox .picker { gap: 0.45rem; }
+  #sandbox .picker-status { order: 3; font-size: 1.0625rem; }
+  #sandbox .disclaimer { order: 4; font-size: 0.9375rem; max-width: 42rem; }
+  #sandbox .save-btn { order: 5; }
+  .place-hint__pill { max-width: min(22rem, calc(100vw - 48px)); font-size: 0.9375rem; }
+}

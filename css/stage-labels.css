@@ -51,3 +51,9 @@ html[data-mode="light"] .stage-phase { text-shadow: 0 0 8px rgba(var(--wall-rgb)
 html[data-mode="light"] .stage-phase--done { color: rgba(var(--ivory-rgb), 0.72); }
 html[data-mode="light"] .stage-phase--active { color: var(--ivory); text-shadow: 0 0 10px rgba(var(--noodle-rgb), 0.9), 0 0 3px rgba(var(--wall-rgb), 0.95); font-weight: 800; }
 @media (max-width: 640px) { .stage-phase { font-size: 0.875rem; } }
+
+/* ---- Portrait tablets (stacked layout, >= 600px wide): the phone composition with tablet-sized type and panels. Query = stacked.js isTabletStacked ---- */
+@media (min-width: 600px) and (max-width: 820px) and (min-height: 700px), (orientation: portrait) and (min-width: 821px) and (max-width: 1100px) {
+  .stage-phase { font-size: 1.125rem; }
+  .stage-label { font-size: 0.875rem; }
+}

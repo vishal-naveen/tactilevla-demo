@@ -2,12 +2,31 @@
 // target rectangle in the viewport, find the closest camera distance that fits and the lens shift that centres it.
 import * as THREE from 'three'
 
-// Fractions of the viewport (origin top-left). The page's text column owns the left ~47% on landscape and the
-// lower half on portrait, so the 3D subject must live in what is left.
-export function safeRect(aspect) {
-  return aspect < 1
-    ? { x0: 0.05, x1: 0.95, y0: 0.105, y1: 0.5 }
-    : { x0: 0.53, x1: 0.975, y0: 0.115, y1: 0.93 }
+// The stacked-vs-column predicate lives in ./stacked.js (dependency-free, shared with the page's JS and mirrored by the CSS).
+import { isStacked, isTabletStacked } from './stacked.js'
+export { STACK_MAX_W, STACK_PORTRAIT_MAX_W, STACKED_QUERY, TABLET_STACKED_QUERY, isStacked, isTabletStacked } from './stacked.js'
+
+// Right edge (CSS px) of the widest text column, mirroring css: --gutter = clamp(16px, 6.5vw, 8rem) plus the hero panel
+// min(46vw, 60rem). Everything the 3D draws (subject, phase words, hint) must stay to the right of this.
+export function textColumnRight(w) {
+  const gutter = Math.min(128, Math.max(16, 0.065 * w))
+  return Math.min(w, gutter + Math.min(0.46 * w, 960))
+}
+
+// Bottom edge (fraction of the viewport height) of the clear window onto the 3D when stacked: the text panels own everything
+// below it. Portrait tablets have relatively shorter panels than phones, so the scene gets more of the screen there.
+export const stackedSceneBottom = (w, h) => (isTabletStacked(w, h) ? 0.56 : 0.5)
+
+// Fractions of the viewport (origin top-left). The page's text column owns the left ~52% on wide layouts and the
+// lower half when stacked, so the 3D subject must live in what is left. `w` (px) is optional; without it the aspect decides.
+export function safeRect(aspect, w) {
+  const h = w === undefined ? undefined : w / aspect
+  if (w === undefined ? aspect <= 1 : isStacked(w, h)) {
+    return w !== undefined && isTabletStacked(w, h)
+      ? { x0: 0.05, x1: 0.95, y0: 0.08, y1: stackedSceneBottom(w, h) }
+      : { x0: 0.05, x1: 0.95, y0: 0.105, y1: 0.5 }
+  }
+  return { x0: Math.max(0.53, w ? textColumnRight(w) / w + 0.005 : 0), x1: 0.975, y0: 0.115, y1: 0.93 }
 }
 
 const _c = new THREE.Vector3()
@@ -29,11 +48,12 @@ export function cloudBounds(pts) {
 /**
  * @param {{dir:number[], fov:number, sphere?:boolean}} shot  dir = direction from target to camera
  * @param {Float32Array|number[]} pts  flat xyz
+ * @param {number} [width]  viewport width in CSS px (selects stacked vs side layout; falls back to aspect)
  * @returns {{pos:number[], look:number[], fov:number, dx:number, dy:number}}
  *   dx: fraction of the viewport width the image is shifted right; dy: fraction of the height shifted up.
  */
-export function fitShot(shot, pts, aspect, margin = 0.02) {
-  const R = safeRect(aspect)
+export function fitShot(shot, pts, aspect, margin = 0.02, width) {
+  const R = safeRect(aspect, width)
   const rw = R.x1 - R.x0 - margin * 2, rh = R.y1 - R.y0 - margin * 2
   const rcx = (R.x0 + R.x1) / 2, rcy = (R.y0 + R.y1) / 2
   const tanV = Math.tan(THREE.MathUtils.degToRad(shot.fov) / 2)

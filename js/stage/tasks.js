@@ -4,6 +4,7 @@
 import * as THREE from 'three'
 import { JOINT_NAMES } from './robot.js'
 import { cellCenter, noodleYaw, NOODLE, CUP, TABLE_Y } from './layout.js'
+import { smoothDampInto } from './blend.js'
 
 export const GRIP_OPEN = 0.95
 export const HZ = 30
@@ -14,7 +15,14 @@ export const PHASE_NAMES = ['approach', 'descend', 'grasp', 'lift', 'carry', 're
 const PHASE_T = [[0, 1.05], [1.05, 1.85], [1.85, 2.5], [2.5, 3.45], [3.45, 4.25], [4.25, 5.3], [5.3, 6.7]]
 const PHASE_PIN = [0.32, 1.45, 2.2, 2.85, 3.7, 4.65, 6.0]
 const FALL_G = 3.6, FALL_XZ = 7, FALL_ROT = 9, FALL_REST = 0.28 // the noodle's drop into the cup
-const OMEGA_IDLE = 4.2
+// Idle pose follower: critically damped with a per-joint speed cap, so a change of resting pose (or a task handing over to
+// one) is a glide, never a whip. Caps in rad/s: shoulder pan/lift, elbow, wrist flex, wrist roll, gripper.
+const IDLE_SMOOTH = 0.42
+const IDLE_MAX = [1.1, 1.1, 1.25, 1.4, 1.6, 1.6]
+// A loop task's authored choreography has a few fast swings (the wrist roll on the return, mostly). Loop tasks are never
+// scrubbed, so the displayed joints are slew-limited to these rad/s: a whip becomes a slightly late, then caught-up, motion.
+const AUTO_SLEW = [3.2, 3.2, 3.0, 3.4, 4.0, 5.0]
+const GLIDE_RATE = 0.85 // rad/s: a task that starts away from its home pose glides in at no more than about this speed
 const GRASP_KNOT = 4 // closed on the noodle
 const SCRUB_RATE = 18 // how fast the displayed time chases a scrub target
 
@@ -287,7 +295,7 @@ export class ArmController {
     const plan = this.plan
     if (!plan) return false
     if (!this.cur) { // bring the finished task back on stage, starting from its end
-      this.cur = { plan, resolve: () => {}, auto: false, blend: this.last.blend }
+      this.cur = { plan, resolve: () => {}, auto: false, blend: this.last.blend, blendDur: this.last.blendDur ?? 1.1 }
       this.t = plan.duration
     }
     this.paused = true
@@ -296,8 +304,8 @@ export class ArmController {
   }
 
   setTarget(q, snap = false) {
-    this.target = q.slice()
-    if (snap && !this.cur) { this.q = q.slice(); this._apply() }
+    for (let i = 0; i < 6; i++) this.target[i] = q[i]
+    if (snap && !this.cur) { this.q = q.slice(); this.qv.fill(0); this._apply() }
   }
 
   atTarget(eps = 0.02) { return !this.cur && this.q.every((v, i) => Math.abs(v - this.target[i]) < eps) }
@@ -308,7 +316,16 @@ export class ArmController {
       const next = loopCell()
       if (next && this.plans[next]) this.queue.push({ plan: this.plans[next], resolve: () => {}, auto: true })
     }
-    if (!this.cur && this.queue.length) this._start(this.queue.shift())
+    if (!this.cur && this.queue.length) {
+      const job = this.queue[0]
+      // A loop task begins from its home pose: glide there first (speed-capped) rather than blending a big offset into it.
+      if (job.auto && !this.snap && !this._settledAt(job.plan.knots[0].q)) {
+        this._glide(job.plan.knots[0].q, dt)
+        this._apply()
+        return
+      }
+      this._start(this.queue.shift())
+    }
     if (this.cur) {
       const plan = this.cur.plan
       if (this.scrubTo !== null) { // chase the scrub target (fast critically-damped glide, exact once close)
@@ -318,31 +335,56 @@ export class ArmController {
         this.t += dt * speed
         if (this.t >= plan.duration) { this._finish(false); return }
       }
-      this._pose(plan, this.t, this.scrubTo === null && !this.paused)
+      this._pose(plan, this.t, this.scrubTo === null && !this.paused, dt)
     } else if (this.snap) {
       this.q = this.target.slice()
     } else {
-      // critically damped return: eases out of motion, settles without a pop
-      const e = Math.exp(-OMEGA_IDLE * dt)
-      for (let i = 0; i < 6; i++) {
-        const d = this.q[i] - this.target[i]
-        const tt = (this.qv[i] + OMEGA_IDLE * d) * dt
-        this.q[i] = this.target[i] + (d + tt) * e
-        this.qv[i] = (this.qv[i] - OMEGA_IDLE * tt) * e
-      }
+      this._glide(this.target, dt)
     }
     this._apply()
   }
 
-  _pose(plan, t, playing) {
+  /** Critically damped, speed-capped step of the displayed pose toward `q` (eases out of motion, settles without a pop). */
+  _glide(q, dt) {
+    for (let i = 0; i < 6; i++) smoothDampInto(this.q, this.qv, q[i], i, IDLE_SMOOTH, IDLE_MAX[i], dt)
+  }
+
+  _settledAt(q) {
+    for (let i = 0; i < 6; i++) if (Math.abs(this.q[i] - q[i]) > 0.03 || Math.abs(this.qv[i]) > 0.08) return false
+    return true
+  }
+
+  /**
+   * Leave a running loop task early, while the noodle is still on the table (before the grasp): the arm simply glides on
+   * from where it is, carrying its velocity. Returns true if it yielded. Later phases finish on their own (eased speed).
+   */
+  yieldAuto() {
+    const c = this.cur
+    if (!c || !c.auto || this.paused || this.scrubTo !== null || this.t >= c.plan.grabT - 0.35) return false
+    this.last = { plan: c.plan, blend: c.blend, blendDur: c.blendDur }
+    this.cur = null
+    c.resolve()
+    return true
+  }
+
+  _pose(plan, t, playing, dt = 0) {
     plan.spline(Math.min(t, plan.duration), this._q)
     const b = this.cur.blend
     if (b) { // glide in from wherever the arm was parked (a function of t, so it scrubs too)
-      const w = Math.max(0, 1 - t / 1.1)
+      const w = Math.max(0, 1 - t / this.cur.blendDur)
       const e = w * w * (3 - 2 * w)
       for (let i = 0; i < 6; i++) this._q[i] += b[i] * e
     }
-    for (let i = 0; i < 6; i++) this.q[i] = this._q[i]
+    if (this.cur.auto && dt > 0) { // slew limit (loop tasks only: explicit / scrubbed tasks must stay exact)
+      for (let i = 0; i < 6; i++) {
+        const m = AUTO_SLEW[i] * dt, d = this._q[i] - this.q[i]
+        if (d > m) this._q[i] = this.q[i] + m; else if (d < -m) this._q[i] = this.q[i] - m
+      }
+    }
+    for (let i = 0; i < 6; i++) {
+      if (dt > 1e-4) this.qv[i] += ((this._q[i] - this.q[i]) / dt - this.qv[i]) * Math.min(1, dt * 30) // velocity estimate, for handing over
+      this.q[i] = this._q[i]
+    }
     this.noodle.applyPlan(plan, t, playing)
   }
 
@@ -352,14 +394,14 @@ export class ArmController {
     if (!done) return
     if (!cancel) {
       done.plan.spline(done.plan.duration, this._q)
-      this.q = this._q.slice()
+      if (!done.auto) this.q = this._q.slice() // a loop task hands over from wherever the (slew-limited) arm is; the glide finishes the job
       this.noodle.applyPlan(done.plan, done.plan.duration, false)
     }
-    this.last = { plan: done.plan, blend: done.blend }
+    this.last = { plan: done.plan, blend: done.blend, blendDur: done.blendDur }
     this.cur = null
     this.paused = false
     this.scrubTo = null
-    this.qv.fill(0)
+    if (!done.auto || cancel) this.qv.fill(0)
     this._apply()
     done.resolve()
   }
@@ -369,7 +411,9 @@ export class ArmController {
     const h = plan.knots[0].q
     let blend = this.q.map((v, i) => v - h[i])
     if (blend.every((v) => Math.abs(v) < 0.01)) blend = null
-    this.cur = { plan, resolve: job.resolve, auto: !!job.auto, blend }
+    // The glide-in lasts long enough that no joint moves faster than GLIDE_RATE (never shorter than the old 1.1 s).
+    const blendDur = blend ? Math.max(1.1, 1.5 * Math.max(...blend.map(Math.abs)) / GLIDE_RATE) : 1.1
+    this.cur = { plan, resolve: job.resolve, auto: !!job.auto, blend, blendDur }
     this.t = 0
     this.paused = false
     this.scrubTo = null

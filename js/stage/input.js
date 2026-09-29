@@ -25,6 +25,13 @@ export function createInput({ canvas, camera, grid, camRig, getChapter, onClick,
   // and the page could not scroll. Keep vertical panning native (horizontal drags and pinch still orbit/zoom).
   const keepScrollable = () => { canvas.style.touchAction = 'pan-y' }
   keepScrollable()
+  // A plain wheel / trackpad / momentum scroll that happens to sit over the canvas must scroll the page. OrbitControls
+  // would also preventDefault it and dolly the camera out to maxDistance (the sandbox "zooms out fully" bug). Only a
+  // pinch (ctrl-wheel on trackpads) or a two-finger touch pinch zooms. Capture on window runs before the canvas handler.
+  const gateWheel = (e) => { controls.enableZoom = e.ctrlKey }
+  const armZoom = () => { controls.enableZoom = true }
+  window.addEventListener('wheel', gateWheel, { capture: true, passive: true })
+  window.addEventListener('pointerdown', armZoom, { capture: true, passive: true })
   let active = false // controls currently own the camera
   let down = null
   let hoverOn = false
@@ -101,6 +108,8 @@ export function createInput({ canvas, camera, grid, camRig, getChapter, onClick,
       window.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerdown', onDown)
       canvas.removeEventListener('pointerup', onUp)
+      window.removeEventListener('wheel', gateWheel, true)
+      window.removeEventListener('pointerdown', armZoom, true)
       controls.dispose()
     },
   }

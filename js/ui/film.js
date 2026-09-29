@@ -1,4 +1,5 @@
 import { $, $$, reduced } from './env.js';
+import { guardVideo, setExclusive } from './video-guard.js';
 
 const ICON = {
   play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
@@ -54,39 +55,46 @@ function buildControls(frame, v) {
 }
 
 export function initFilm() {
-  const reels = $$('.reel:not(.reel--wide)');
+  const reels = $$('.reel');
   let engaged = null;
+  // Each reel's video is wrapped once: poster painted behind it until a real frame exists, error/stall recovery, and
+  // unload() (src dropped, poster back) whenever it is not the one playing, so iOS never holds more than one decoder here.
+  const guards = new Map(reels.map((reel) => [reel, guardVideo($('.frame', reel), $('video', reel))]));
 
   const preview = (reel) => {
     if (reduced || engaged === reel) return;
-    const v = $('video', reel);
-    v.muted = true;
-    v.play().catch(() => {});
+    guards.get(reel).start().catch(() => {});
     reel.classList.add('is-previewing');
   };
   const stopPreview = (reel) => {
     if (engaged === reel) return;
-    const v = $('video', reel);
-    v.pause();
-    v.currentTime = 0;
+    guards.get(reel).unload();
     reel.classList.remove('is-previewing');
   };
   const disengage = (reel) => {
     const v = $('video', reel);
-    v.pause(); v.muted = true; v.currentTime = 0;
+    v.muted = true;
+    guards.get(reel).unload();
     reel.classList.remove('is-engaged', 'is-previewing');
-    if (engaged === reel) engaged = null;
+    if (engaged === reel) { engaged = null; setExclusive(null); }
   };
   const engage = (reel) => {
     if (engaged && engaged !== reel) disengage(engaged);
     engaged = reel;
+    setExclusive(reel); // loops elsewhere on the page pause so this reel gets the decoder
     const v = $('video', reel);
+    const g = guards.get(reel);
     v.controls = false;
     if (!$('.vc', reel)) buildControls($('.frame', reel), v);
-    v.currentTime = 0; v.muted = false;
+    g.ensureSrc();
+    g.rewind();
+    v.muted = false;
     reel.classList.add('is-engaged');
     reel.classList.remove('is-previewing');
-    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+    // an unloaded video comes back with its caption track reset: re-apply the CC button's state once metadata is there
+    const cc = $('.vc-cc', reel);
+    if (cc && v.textTracks[0]) v.addEventListener('loadedmetadata', () => { v.textTracks[0].mode = cc.getAttribute('aria-pressed') === 'true' ? 'showing' : 'disabled'; }, { once: true });
+    g.start().catch(() => { v.muted = true; g.start().catch(() => {}); });
     $('.vc-play', reel).focus();
   };
 
@@ -100,6 +108,14 @@ export function initFilm() {
     btn.addEventListener('click', () => engage(reel));
     v.addEventListener('ended', () => disengage(reel));
   });
+
+  // The first reel (ACT in B2, the key clip) plays muted while it is on screen, so the proof is moving without a click.
+  // Hover previews and engaged reels still take over; reduced motion keeps it on the poster.
+  if (!reduced && reels[0]) {
+    new IntersectionObserver((entries) => {
+      entries.forEach((e) => { e.isIntersecting ? preview(reels[0]) : stopPreview(reels[0]); });
+    }, { threshold: 0.6 }).observe(reels[0]);
+  }
 
   // Prev / next buttons and the progress bar follow the strip.
   const strip = $('#strip');

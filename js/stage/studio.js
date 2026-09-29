@@ -200,7 +200,11 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
     },
     setEnvironment(renderer) {
       const pmrem = new THREE.PMREMGenerator(renderer)
-      const tex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+      const old = envHolder.rt
+      const rt = pmrem.fromScene(new RoomEnvironment(), 0.04)
+      const tex = rt.texture
+      old?.dispose() // rebuilt after a lost context: drop the dead one
+      envHolder.rt = rt
       scene.environment = tex
       scene.environmentIntensity = 0.4
       envHolder.tex = tex
@@ -241,6 +245,7 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
       amber.intensity = amberI
     },
     dispose() {
+      envHolder.rt?.dispose()
       envHolder.tex?.dispose()
       key.shadow.map?.dispose()
     },

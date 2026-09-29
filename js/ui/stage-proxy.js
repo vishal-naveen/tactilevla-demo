@@ -2,6 +2,7 @@
 // stage attaches (it may arrive late on a busy machine); the page never has to know which case it is in.
 export function createStageProxy() {
   let real = null;
+  let textSafe = null; // last measured text rect: replayed to a stage that attaches late
   const cellClicks = [], phaseClicks = [], tableClicks = [];
   const call = (name, ...args) => (real ? real[name]?.(...args) : undefined);
   return {
@@ -9,11 +10,14 @@ export function createStageProxy() {
     get real() { return real; },
     attach(stage) {
       real = stage;
+      if (typeof stage.setTextSafeArea === 'function') stage.setTextSafeArea(textSafe);
       cellClicks.forEach((cb) => stage.onCellClick(cb));
       if (typeof stage.onPhaseClick === 'function') phaseClicks.forEach((cb) => stage.onPhaseClick(cb));
       if (typeof stage.onTableClick === 'function') tableClicks.forEach((cb) => stage.onTableClick(cb));
     },
+    detach() { real = null; },
     setChapter: (...a) => call('setChapter', ...a),
+    setChapterBlend: (...a) => call('setChapterBlend', ...a),
     setProgress: (...a) => call('setProgress', ...a),
     setPolicy: (...a) => call('setPolicy', ...a),
     setTheme: (...a) => call('setTheme', ...a),
@@ -31,6 +35,7 @@ export function createStageProxy() {
     resumeTask: () => call('resumeTask'),
     scrubTask: (t) => call('scrubTask', t),
     setPhaseMarkers: (on) => call('setPhaseMarkers', on),
+    setTextSafeArea(rect) { textSafe = rect; call('setTextSafeArea', rect); },
     runTaskAt: (pt) => (real && typeof real.runTaskAt === 'function' ? real.runTaskAt(pt) : Promise.resolve('unreachable')),
     onPhaseClick(cb) { phaseClicks.push(cb); if (real && typeof real.onPhaseClick === 'function') real.onPhaseClick(cb); },
     onTableClick(cb) { tableClicks.push(cb); if (real && typeof real.onTableClick === 'function') real.onTableClick(cb); },

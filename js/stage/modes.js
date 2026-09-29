@@ -16,7 +16,7 @@ const base = {
 const M = (o) => ({ ...base, ...o })
 
 export const MODES = {
-  hero: M({ shot: 'hero', loop: 'hero', speed: 1, line: 0.45, fill: 0.5, pulse: 0.3, phases: 'subtle' }),
+  hero: M({ shot: 'hero', loop: 'hero', speed: 1, line: 0.45, fill: 0.5, pulse: 0.3, phases: null }),
   arm: M({ shot: 'arm', pose: 'home', noodle: 'table', line: 0.18, fill: 0.25, pulse: 0.1, explode: 1, kick: 2.6 }),
   data: M({ shot: 'data', pose: 'rest', noodle: 'hidden', line: 1, fill: 1, label: 1, cross: 0, dots: 1, arcs: 1, path: 1, pulse: 0.2 }),
   sees: M({ shot: 'sees', pose: 'sees', noodle: 'sees', line: 0.5, fill: 0.5, label: 0, pulse: 0.1, frustum: 1 }),
