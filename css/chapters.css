@@ -131,7 +131,7 @@ main, .group, .chapter, .pin { pointer-events: none; }
 
 /* ---- Portrait tablets (stacked layout, >= 600px wide): the phone composition with tablet-sized type and panels. Query = stacked.js isTabletStacked ---- */
 @media (min-width: 600px) and (max-width: 820px) and (min-height: 700px), (orientation: portrait) and (min-width: 821px) and (max-width: 1100px) {
-  :root { --fs-body: 1.1875rem; --fs-caption: 0.9375rem; --fs-micro: 0.875rem; --gutter: clamp(28px, 6vw, 4.5rem); --topbar-h: 4.75rem; }
+  :root { --fs-body: 1.1875rem; --fs-caption: 0.9375rem; --fs-micro: 0.875rem; --gutter: clamp(28px, 6vw, 4.5rem); --topbar-h: calc(4.75rem + var(--sat)); }
   .panel, .chapter--data .panel { padding: 4rem var(--gutter) 4.6rem; }
   .pin .panel { padding-top: 4rem; padding-bottom: 4.6rem; }
   .panel p, .panel .lede { max-width: 40rem; }

@@ -21,8 +21,21 @@ npx http-server . -p 8000    # or: python3 -m http.server 8000
 # open http://localhost:8000/
 ```
 
-An internet connection is needed for three.js, GSAP and Lenis (jsDelivr) and the Archivo font (Google Fonts).
+No internet connection is needed: three.js, GSAP, Lenis and the Archivo font are vendored in `vendor/`
+(`python3 scripts/vendor.py` re-downloads them at the pinned versions).
 Add `?nogl` to test the no-WebGL fallback.
+
+## Install it as an app (works offline)
+
+On iPhone or iPad, open the live URL in Safari once, tap Share, then Add to Home Screen. The first time you open
+the icon it saves everything (about 17 MB, including the seven videos) and shows "Ready offline" when done; after
+that it runs with no connection. In a normal browser tab only the app shell (about 7 MB) is cached and each
+video is kept once it has been played. `?precache=all` saves everything from a tab too, and `?nosw` skips the
+service worker.
+
+`sw.js` is the service worker. **After changing any shipped file, run `python3 scripts/gen-sw-manifest.py`**
+(it rewrites `sw-manifest.json` and stamps its hash into `sw.js`; `--check` reports a stale one). A new version is
+picked up on the next launch; nothing reloads mid-view.
 
 ## Credits and licenses
 
@@ -30,5 +43,5 @@ Add `?nogl` to test the no-WebGL fallback.
 - SO-101 URDF and STL meshes: [TheRobotStudio/SO-ARM100](https://github.com/TheRobotStudio/SO-ARM100),
   Apache-2.0. The meshes are decimated for the web; see `assets/so101/NOTICE.md`.
 - Footage and images in `media/`: (c) Vishal Naveen, all rights reserved unless stated otherwise.
-- Loaded from CDN, not redistributed: three.js (MIT), GSAP (GreenSock standard license), Lenis (MIT),
-  Archivo (SIL OFL 1.1).
+- Vendored in `vendor/`, with license texts in `vendor/licenses/`: three.js (MIT), Lenis (MIT), GSAP and ScrollTrigger
+  (GreenSock standard "no charge" license, https://gsap.com/standard-license), Archivo (SIL OFL 1.1).

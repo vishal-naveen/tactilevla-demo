@@ -1,0 +1,11 @@
+GSAP (GreenSock Animation Platform) 3.12.5, including ScrollTrigger
+Copyright 2008-2024, GreenSock. All rights reserved.
+
+GSAP is distributed here under the GreenSock Standard "no charge" License:
+  https://gsap.com/standard-license
+
+In short: the Standard License is free of charge, including for commercial
+projects, provided the software is not used in a product or tool that
+competes with GreenSock's own offerings. See the link above for the full,
+authoritative terms. The license notice is also kept in the header comment
+of each GSAP file in vendor/gsap/.

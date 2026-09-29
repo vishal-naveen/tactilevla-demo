@@ -105,7 +105,7 @@ p + p { margin-top: 1rem; }
 .topbar {
   position: fixed; inset: 0 0 auto 0; z-index: 20; height: var(--topbar-h);
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  padding: 0 var(--gutter);
+  padding: var(--sat) max(var(--gutter), env(safe-area-inset-right, 0px)) 0 max(var(--gutter), env(safe-area-inset-left, 0px));
   background: rgba(var(--veil-rgb), 0.62);
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   transition: box-shadow 0.4s;

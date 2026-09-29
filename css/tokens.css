@@ -26,7 +26,8 @@
   --gutter: clamp(16px, 6.5vw, 8rem);
   --col: min(34rem, 41vw);
   --wide: min(42rem, 41vw);
-  --topbar-h: 4.25rem;
+  --sat: env(safe-area-inset-top, 0px);   /* notch / status bar in the Home Screen app (0 in a tab) */
+  --topbar-h: calc(4.25rem + var(--sat));
   --space-section: clamp(4rem, 8vw, 6rem);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-io: cubic-bezier(0.65, 0, 0.35, 1);

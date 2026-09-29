@@ -1,0 +1,22 @@
+/* "Saving for offline" status toast: a quiet pill under the top bar, same glass as the tour pill. */
+.offline-toast {
+  position: fixed; left: 50%; top: calc(var(--topbar-h) + 0.6rem); z-index: 60; margin: 0;
+  display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.55rem 1rem 0.55rem 0.85rem;
+  max-width: calc(100vw - 2rem); overflow: hidden; pointer-events: none;
+  border-radius: 999px; background: rgba(var(--veil-rgb), 0.82);
+  box-shadow: 0 0 0 1px var(--hair-strong), 0 12px 40px -12px var(--shadow);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  font-size: var(--fs-caption); line-height: 1.2; color: var(--ivory); font-variant-numeric: tabular-nums; white-space: nowrap;
+  opacity: 0; visibility: hidden; transform: translate(-50%, -6px);
+  transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out), visibility 0s 0.45s;
+}
+.offline-toast.is-shown { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition-delay: 0s; }
+.offline-toast__dot { flex: none; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--noodle); box-shadow: 0 0 0.6rem rgba(var(--noodle-rgb), 0.7); animation: offline-pulse 1.4s ease-in-out infinite; }
+.offline-toast[data-state="ready"] .offline-toast__dot { background: var(--trained); box-shadow: 0 0 0.6rem rgba(var(--trained-rgb), 0.7); animation: none; }
+.offline-toast[data-state="problem"] .offline-toast__dot { background: var(--held); box-shadow: none; animation: none; }
+.offline-toast__text { overflow: hidden; text-overflow: ellipsis; }
+.offline-toast__bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(var(--ivory-rgb), 0.1); }
+.offline-toast__bar i { position: absolute; inset: 0; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); background: linear-gradient(90deg, var(--noodle), var(--held)); transition: transform 0.3s linear; }
+.offline-toast[data-state="problem"] .offline-toast__bar { display: none; }
+@keyframes offline-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .offline-toast { transition: opacity 0.2s; transform: translate(-50%, 0); } .offline-toast__dot { animation: none; } .offline-toast__bar i { transition: none; } }

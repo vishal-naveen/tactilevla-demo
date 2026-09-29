@@ -16,6 +16,7 @@ import { initTelemetry } from './ui/telemetry.js';
 import { initSafeArea } from './ui/safe-area.js';
 import { initTour } from './ui/tour.js';
 import { initTourFade } from './ui/tour-fade.js';
+import { initOffline } from './ui/offline.js';
 
 window.__booted = true;
 const root = document.documentElement;
@@ -202,3 +203,4 @@ try {
 cue();
 safe('tour', () => initTour({ stage, getScroll: () => scrollHandle }));
 safe('tour fade', initTourFade);
+safe('offline', () => initOffline({ swUrl: './sw.js', scope: './' })); // service worker: installable + offline (last, so it never competes with the boot)

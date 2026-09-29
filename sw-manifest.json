@@ -1,0 +1,947 @@
+{
+ "files": [
+  {
+   "hash": "43f2f6dd98f10a872345",
+   "path": "assets/so101/assets/base_motor_holder_so101_v1.stl",
+   "size": 225084,
+   "tier": "shell"
+  },
+  {
+   "hash": "2aee2c6ae7e1b48f1384",
+   "path": "assets/so101/assets/base_so101_v2.stl",
+   "size": 150084,
+   "tier": "shell"
+  },
+  {
+   "hash": "9e8692f74d86e3e2d92e",
+   "path": "assets/so101/assets/motor_holder_so101_base_v1.stl",
+   "size": 210084,
+   "tier": "shell"
+  },
+  {
+   "hash": "17de08f2bae0c4702f15",
+   "path": "assets/so101/assets/motor_holder_so101_wrist_v1.stl",
+   "size": 210084,
+   "tier": "shell"
+  },
+  {
+   "hash": "4085ece61289e2cd126c",
+   "path": "assets/so101/assets/moving_jaw_so101_v1.stl",
+   "size": 375084,
+   "tier": "shell"
+  },
+  {
+   "hash": "ed2421bce0d1eae01b35",
+   "path": "assets/so101/assets/rotation_pitch_so101_v1.stl",
+   "size": 210084,
+   "tier": "shell"
+  },
+  {
+   "hash": "fdace097f71ab94b89e0",
+   "path": "assets/so101/assets/sts3215_03a_no_horn_v1.stl",
+   "size": 225084,
+   "tier": "shell"
+  },
+  {
+   "hash": "5fee9ad60327240b6d62",
+   "path": "assets/so101/assets/sts3215_03a_v1.stl",
+   "size": 225084,
+   "tier": "shell"
+  },
+  {
+   "hash": "101c2ca06bacc6f079f0",
+   "path": "assets/so101/assets/under_arm_so101_v1.stl",
+   "size": 300084,
+   "tier": "shell"
+  },
+  {
+   "hash": "cdcbfb9f67f946e603e1",
+   "path": "assets/so101/assets/upper_arm_so101_v1.stl",
+   "size": 275084,
+   "tier": "shell"
+  },
+  {
+   "hash": "2533821846d1e977a83a",
+   "path": "assets/so101/assets/waveshare_mounting_plate_so101_v2.stl",
+   "size": 62784,
+   "tier": "shell"
+  },
+  {
+   "hash": "7097c9997a6593fd4ff2",
+   "path": "assets/so101/assets/wrist_roll_follower_so101_v1.stl",
+   "size": 350084,
+   "tier": "shell"
+  },
+  {
+   "hash": "9ae8b672759c835b4491",
+   "path": "assets/so101/assets/wrist_roll_pitch_so101_v2.stl",
+   "size": 375084,
+   "tier": "shell"
+  },
+  {
+   "hash": "3a65d2d35e68a8d2f0c2",
+   "path": "assets/so101/so101_new_calib.urdf",
+   "size": 16231,
+   "tier": "shell"
+  },
+  {
+   "hash": "7f0a4e9eff604550ad85",
+   "path": "css/base.css",
+   "size": 9269,
+   "tier": "shell"
+  },
+  {
+   "hash": "74bf503adc0300e3aa8b",
+   "path": "css/chapters.css",
+   "size": 10208,
+   "tier": "shell"
+  },
+  {
+   "hash": "7c5d310b62a3e8f77d8c",
+   "path": "css/components.css",
+   "size": 13389,
+   "tier": "shell"
+  },
+  {
+   "hash": "36f555adb91973dd5ab7",
+   "path": "css/film.css",
+   "size": 6782,
+   "tier": "shell"
+  },
+  {
+   "hash": "60664433928a401aeebd",
+   "path": "css/loader.css",
+   "size": 1329,
+   "tier": "shell"
+  },
+  {
+   "hash": "54ebd51e9453aba0aee9",
+   "path": "css/offline.css",
+   "size": 2241,
+   "tier": "shell"
+  },
+  {
+   "hash": "9bceef3d78ca8676b502",
+   "path": "css/stage-labels.css",
+   "size": 3534,
+   "tier": "shell"
+  },
+  {
+   "hash": "b533bdee3228ba908c56",
+   "path": "css/telemetry.css",
+   "size": 8517,
+   "tier": "shell"
+  },
+  {
+   "hash": "cb28a4dbb49fedb8a2ae",
+   "path": "css/theme.css",
+   "size": 6335,
+   "tier": "shell"
+  },
+  {
+   "hash": "ccdbc82984082b22aa3e",
+   "path": "css/tokens.css",
+   "size": 1798,
+   "tier": "shell"
+  },
+  {
+   "hash": "47117f0865714a98e927",
+   "path": "css/touch-sandbox.css",
+   "size": 10771,
+   "tier": "shell"
+  },
+  {
+   "hash": "cea2b2860140d0219b19",
+   "path": "css/tour.css",
+   "size": 5559,
+   "tier": "shell"
+  },
+  {
+   "hash": "311b162688a90048a169",
+   "path": "icons/apple-touch-icon.png",
+   "size": 40477,
+   "tier": "shell"
+  },
+  {
+   "hash": "21643f523079a3c0c339",
+   "path": "icons/icon-192.png",
+   "size": 45586,
+   "tier": "shell"
+  },
+  {
+   "hash": "e2eab1f1d344d783dc19",
+   "path": "icons/icon-512.png",
+   "size": 283942,
+   "tier": "shell"
+  },
+  {
+   "hash": "ced904636dced068681d",
+   "path": "icons/icon-maskable-512.png",
+   "size": 177915,
+   "tier": "shell"
+  },
+  {
+   "hash": "d41a956cec172b594f16",
+   "path": "index.html",
+   "size": 27637,
+   "tier": "shell"
+  },
+  {
+   "hash": "9c6a5139c798cc51a645",
+   "path": "js/main.js",
+   "size": 10418,
+   "tier": "shell"
+  },
+  {
+   "hash": "05ce3a68ed3d1f149dd9",
+   "path": "js/stage/blend.js",
+   "size": 3910,
+   "tier": "shell"
+  },
+  {
+   "hash": "f001696b4ac9476ee561",
+   "path": "js/stage/bloom.js",
+   "size": 7847,
+   "tier": "shell"
+  },
+  {
+   "hash": "2098aecd67ede506b7cf",
+   "path": "js/stage/dolly.js",
+   "size": 1849,
+   "tier": "shell"
+  },
+  {
+   "hash": "976418f0e7724b5aba3d",
+   "path": "js/stage/episodes.js",
+   "size": 6797,
+   "tier": "shell"
+  },
+  {
+   "hash": "a25b9fb3b86bfa76e9a5",
+   "path": "js/stage/extras.js",
+   "size": 1973,
+   "tier": "shell"
+  },
+  {
+   "hash": "8eb99eb12369ebbb1309",
+   "path": "js/stage/framing.js",
+   "size": 5255,
+   "tier": "shell"
+  },
+  {
+   "hash": "4e94b2832053d356ad43",
+   "path": "js/stage/frustums.js",
+   "size": 8433,
+   "tier": "shell"
+  },
+  {
+   "hash": "f2f286a744680a83c395",
+   "path": "js/stage/fx.js",
+   "size": 4721,
+   "tier": "shell"
+  },
+  {
+   "hash": "7709bd38e5752ca6695c",
+   "path": "js/stage/gauges.js",
+   "size": 6829,
+   "tier": "shell"
+  },
+  {
+   "hash": "5e411722c0f7e3a2a3c7",
+   "path": "js/stage/governor.js",
+   "size": 4398,
+   "tier": "shell"
+  },
+  {
+   "hash": "a4d0110ca513fbf448e7",
+   "path": "js/stage/grasp.js",
+   "size": 4139,
+   "tier": "shell"
+  },
+  {
+   "hash": "5c89f24a9847cd8ee77b",
+   "path": "js/stage/grid.js",
+   "size": 10613,
+   "tier": "shell"
+  },
+  {
+   "hash": "c3cb64c53e78d06aa8a4",
+   "path": "js/stage/ground.js",
+   "size": 4101,
+   "tier": "shell"
+  },
+  {
+   "hash": "467e47b21fda5d6c43a5",
+   "path": "js/stage/ik.js",
+   "size": 7847,
+   "tier": "shell"
+  },
+  {
+   "hash": "2f42ca8e93d7a8e02364",
+   "path": "js/stage/input.js",
+   "size": 4980,
+   "tier": "shell"
+  },
+  {
+   "hash": "7964b7488ea64904a5c2",
+   "path": "js/stage/layout.js",
+   "size": 1991,
+   "tier": "shell"
+  },
+  {
+   "hash": "15f40d707fc5d9741f2f",
+   "path": "js/stage/modes.js",
+   "size": 2397,
+   "tier": "shell"
+  },
+  {
+   "hash": "3dda6112971f54bf89b2",
+   "path": "js/stage/overlay.js",
+   "size": 1405,
+   "tier": "shell"
+  },
+  {
+   "hash": "aff3782ae5e5d923a34e",
+   "path": "js/stage/palette.js",
+   "size": 1056,
+   "tier": "shell"
+  },
+  {
+   "hash": "290dcd45f96313c029a0",
+   "path": "js/stage/phasemarkers.js",
+   "size": 37728,
+   "tier": "shell"
+  },
+  {
+   "hash": "d38ebf9532dc9808d4b4",
+   "path": "js/stage/placehint.js",
+   "size": 5731,
+   "tier": "shell"
+  },
+  {
+   "hash": "a0c1aebb1e4a5123e449",
+   "path": "js/stage/placement.js",
+   "size": 5131,
+   "tier": "shell"
+  },
+  {
+   "hash": "b1037a07cc69bcf41d5d",
+   "path": "js/stage/plans.js",
+   "size": 2516,
+   "tier": "shell"
+  },
+  {
+   "hash": "1d81da7f50ae6a741ce3",
+   "path": "js/stage/plans.json",
+   "size": 8433,
+   "tier": "shell"
+  },
+  {
+   "hash": "19b30f5a84a709f4b5d5",
+   "path": "js/stage/props.js",
+   "size": 8419,
+   "tier": "shell"
+  },
+  {
+   "hash": "e16f49f5ed854fb0dc2e",
+   "path": "js/stage/protocol.js",
+   "size": 1880,
+   "tier": "shell"
+  },
+  {
+   "hash": "cccb3ad5f99dad956429",
+   "path": "js/stage/protoviz.js",
+   "size": 7539,
+   "tier": "shell"
+  },
+  {
+   "hash": "89c13eac81679b571c95",
+   "path": "js/stage/reachmap.js",
+   "size": 1727,
+   "tier": "shell"
+  },
+  {
+   "hash": "0bb5a41699a59d72ac64",
+   "path": "js/stage/robot.js",
+   "size": 6266,
+   "tier": "shell"
+  },
+  {
+   "hash": "ef58dd76ffec5b0ed8a7",
+   "path": "js/stage/robotfx.js",
+   "size": 8633,
+   "tier": "shell"
+  },
+  {
+   "hash": "f25cb80de048fc2f6e68",
+   "path": "js/stage/shots.js",
+   "size": 11787,
+   "tier": "shell"
+  },
+  {
+   "hash": "c44df217898f4da32943",
+   "path": "js/stage/skeleton.js",
+   "size": 992,
+   "tier": "shell"
+  },
+  {
+   "hash": "19a4ba99f9e0c18d4c1d",
+   "path": "js/stage/stacked.js",
+   "size": 1255,
+   "tier": "shell"
+  },
+  {
+   "hash": "f964436929242ecf9d2e",
+   "path": "js/stage/stage.js",
+   "size": 35110,
+   "tier": "shell"
+  },
+  {
+   "hash": "5172ce145c1befcbe88b",
+   "path": "js/stage/studio.js",
+   "size": 11094,
+   "tier": "shell"
+  },
+  {
+   "hash": "f3f63824045e5beee134",
+   "path": "js/stage/subjects.js",
+   "size": 3737,
+   "tier": "shell"
+  },
+  {
+   "hash": "7523f699ed1f1435755e",
+   "path": "js/stage/tasks.js",
+   "size": 19451,
+   "tier": "shell"
+  },
+  {
+   "hash": "ff7b59b9fdaec9d99e57",
+   "path": "js/stage/themefx.js",
+   "size": 2680,
+   "tier": "shell"
+  },
+  {
+   "hash": "f2c00848cd47fc358664",
+   "path": "js/stage/trail.js",
+   "size": 3398,
+   "tier": "shell"
+  },
+  {
+   "hash": "e0f7b76102b00bbf6c45",
+   "path": "js/stage/urdf.js",
+   "size": 3550,
+   "tier": "shell"
+  },
+  {
+   "hash": "d01e2d9bc71c967d00fd",
+   "path": "js/themes.js",
+   "size": 2909,
+   "tier": "shell"
+  },
+  {
+   "hash": "3831599c4c1268ac0c77",
+   "path": "js/ui/data.js",
+   "size": 1105,
+   "tier": "shell"
+  },
+  {
+   "hash": "d2873d1071766a5d71cd",
+   "path": "js/ui/env.js",
+   "size": 925,
+   "tier": "shell"
+  },
+  {
+   "hash": "26ee3a98cafe95d992dc",
+   "path": "js/ui/film.js",
+   "size": 8340,
+   "tier": "shell"
+  },
+  {
+   "hash": "5ebe4c633efae355b110",
+   "path": "js/ui/fullscreen.js",
+   "size": 3581,
+   "tier": "shell"
+  },
+  {
+   "hash": "db0ec1e268769a417daf",
+   "path": "js/ui/gl-probe.js",
+   "size": 3265,
+   "tier": "shell"
+  },
+  {
+   "hash": "c7e1efcb231e08145183",
+   "path": "js/ui/loader.js",
+   "size": 4453,
+   "tier": "shell"
+  },
+  {
+   "hash": "01943d2838ed2fc85db4",
+   "path": "js/ui/media.js",
+   "size": 3719,
+   "tier": "shell"
+  },
+  {
+   "hash": "2d39468f061ebcf2ca01",
+   "path": "js/ui/mock-stage.js",
+   "size": 2312,
+   "tier": "shell"
+  },
+  {
+   "hash": "f8d6f744d671ac24b0e8",
+   "path": "js/ui/offline.js",
+   "size": 8020,
+   "tier": "shell"
+  },
+  {
+   "hash": "4fa8c948e05ce2a7ecbf",
+   "path": "js/ui/place-hint.js",
+   "size": 7158,
+   "tier": "shell"
+  },
+  {
+   "hash": "a412ca842f98ed187c52",
+   "path": "js/ui/policies.js",
+   "size": 484,
+   "tier": "shell"
+  },
+  {
+   "hash": "5d6b58453ec17941aa48",
+   "path": "js/ui/protocol-local.js",
+   "size": 1131,
+   "tier": "shell"
+  },
+  {
+   "hash": "e680d82e52d792c4f555",
+   "path": "js/ui/results.js",
+   "size": 1397,
+   "tier": "shell"
+  },
+  {
+   "hash": "888651932d266bfe464e",
+   "path": "js/ui/safe-area.js",
+   "size": 5736,
+   "tier": "shell"
+  },
+  {
+   "hash": "8e0cb1fa8415d02cc0d7",
+   "path": "js/ui/sandbox.js",
+   "size": 5454,
+   "tier": "shell"
+  },
+  {
+   "hash": "1570b2ceabf16520e559",
+   "path": "js/ui/scroll.js",
+   "size": 12703,
+   "tier": "shell"
+  },
+  {
+   "hash": "fd925ffc0994e3c66a86",
+   "path": "js/ui/stage-proxy.js",
+   "size": 3012,
+   "tier": "shell"
+  },
+  {
+   "hash": "87b2f883694751641ec4",
+   "path": "js/ui/telemetry.js",
+   "size": 11563,
+   "tier": "shell"
+  },
+  {
+   "hash": "19f36e18d3d923f808f9",
+   "path": "js/ui/theme.js",
+   "size": 4807,
+   "tier": "shell"
+  },
+  {
+   "hash": "989512a7681fac34746f",
+   "path": "js/ui/tour-fade.js",
+   "size": 1680,
+   "tier": "shell"
+  },
+  {
+   "hash": "f3318175fd71f9ae8343",
+   "path": "js/ui/tour.js",
+   "size": 26392,
+   "tier": "shell"
+  },
+  {
+   "hash": "1294693833804cc39a80",
+   "path": "js/ui/video-guard.js",
+   "size": 5665,
+   "tier": "shell"
+  },
+  {
+   "hash": "9910f8796a9da1430b34",
+   "path": "manifest.webmanifest",
+   "size": 758,
+   "tier": "shell"
+  },
+  {
+   "hash": "af4f4c2fa3b023097b36",
+   "path": "media/act-a2.mp4",
+   "size": 1595160,
+   "tier": "media"
+  },
+  {
+   "hash": "2b0d84808a063d913248",
+   "path": "media/act-a2.vtt",
+   "size": 101,
+   "tier": "shell"
+  },
+  {
+   "hash": "339cdb1e6dd8a8cdb75b",
+   "path": "media/act-b2-heldout.jpg",
+   "size": 13449,
+   "tier": "shell"
+  },
+  {
+   "hash": "d2787016561010f28a9b",
+   "path": "media/act-b2-heldout.mp4",
+   "size": 203582,
+   "tier": "media"
+  },
+  {
+   "hash": "3e1a9f160bdefcd3372a",
+   "path": "media/act-b2-heldout.webp",
+   "size": 7102,
+   "tier": "shell"
+  },
+  {
+   "hash": "529c2894f819cfdc6e2e",
+   "path": "media/act-b2.mp4",
+   "size": 2623898,
+   "tier": "media"
+  },
+  {
+   "hash": "28658bf83a8692689cc0",
+   "path": "media/act-b2.vtt",
+   "size": 483,
+   "tier": "shell"
+  },
+  {
+   "hash": "c7580006af6c1e7771e6",
+   "path": "media/grid-session-b2.jpg",
+   "size": 105611,
+   "tier": "shell"
+  },
+  {
+   "hash": "52362f730cb06da53a5b",
+   "path": "media/grid-session-b2.webp",
+   "size": 65602,
+   "tier": "shell"
+  },
+  {
+   "hash": "7843b11387128cef5e5d",
+   "path": "media/observation-streams.jpg",
+   "size": 12713,
+   "tier": "shell"
+  },
+  {
+   "hash": "0f2e7ae7fd62a5121a39",
+   "path": "media/observation-streams.mp4",
+   "size": 211841,
+   "tier": "media"
+  },
+  {
+   "hash": "79d543b0d2a26109ca37",
+   "path": "media/observation-streams.webp",
+   "size": 5480,
+   "tier": "shell"
+  },
+  {
+   "hash": "3a90c2dffc213e1dfa89",
+   "path": "media/og-image.jpg",
+   "size": 201779,
+   "tier": "shell"
+  },
+  {
+   "hash": "75b081bfd3ad482c0fa6",
+   "path": "media/poster-act-a2.jpg",
+   "size": 34997,
+   "tier": "shell"
+  },
+  {
+   "hash": "3f1e927e262aef794855",
+   "path": "media/poster-act-a2.webp",
+   "size": 23436,
+   "tier": "shell"
+  },
+  {
+   "hash": "6099c3da5b2a6ef36e94",
+   "path": "media/poster-act-b2.jpg",
+   "size": 27367,
+   "tier": "shell"
+  },
+  {
+   "hash": "7f6d1982dd667c2da1ef",
+   "path": "media/poster-act-b2.webp",
+   "size": 17064,
+   "tier": "shell"
+  },
+  {
+   "hash": "e75b64c005d291d63a00",
+   "path": "media/poster-smolvla-b2.jpg",
+   "size": 29489,
+   "tier": "shell"
+  },
+  {
+   "hash": "a51d2912daf72a19f679",
+   "path": "media/poster-smolvla-b2.webp",
+   "size": 19428,
+   "tier": "shell"
+  },
+  {
+   "hash": "fe0f5f975d52acf6f622",
+   "path": "media/poster-smolvla-c3.jpg",
+   "size": 26038,
+   "tier": "shell"
+  },
+  {
+   "hash": "04919a923e6358e5be75",
+   "path": "media/poster-smolvla-c3.webp",
+   "size": 16378,
+   "tier": "shell"
+  },
+  {
+   "hash": "30d50a7e13c40e578176",
+   "path": "media/poster-timelapse.jpg",
+   "size": 21807,
+   "tier": "shell"
+  },
+  {
+   "hash": "908a43537faef949c9e9",
+   "path": "media/poster-timelapse.webp",
+   "size": 14870,
+   "tier": "shell"
+  },
+  {
+   "hash": "3e733dca1f4db1597343",
+   "path": "media/recording-timelapse.mp4",
+   "size": 2508962,
+   "tier": "media"
+  },
+  {
+   "hash": "bc86f6ee70d6b6028a00",
+   "path": "media/smolvla-b2.mp4",
+   "size": 2193952,
+   "tier": "media"
+  },
+  {
+   "hash": "9237b0aefbdf3e100e86",
+   "path": "media/smolvla-b2.vtt",
+   "size": 410,
+   "tier": "shell"
+  },
+  {
+   "hash": "3f76ed92a4b2936e1af7",
+   "path": "media/smolvla-c3.mp4",
+   "size": 1343349,
+   "tier": "media"
+  },
+  {
+   "hash": "8ef688931c207ad9bd06",
+   "path": "media/smolvla-c3.vtt",
+   "size": 327,
+   "tier": "shell"
+  },
+  {
+   "hash": "e65711486b93fdc7683e",
+   "path": "vendor/fonts/archivo-0.woff2",
+   "size": 34364,
+   "tier": "shell"
+  },
+  {
+   "hash": "a75c792f980dc1dbe0e8",
+   "path": "vendor/fonts/archivo-1.woff2",
+   "size": 85856,
+   "tier": "shell"
+  },
+  {
+   "hash": "4c98b9d490d1698ec95f",
+   "path": "vendor/fonts/archivo-2.woff2",
+   "size": 90096,
+   "tier": "shell"
+  },
+  {
+   "hash": "78d6e47ab23901884a9b",
+   "path": "vendor/fonts/archivo.css",
+   "size": 1158,
+   "tier": "shell"
+  },
+  {
+   "hash": "c2f2cff1b79e4cb4fdda",
+   "path": "vendor/gsap/CSSPlugin.js",
+   "size": 63331,
+   "tier": "shell"
+  },
+  {
+   "hash": "93973b86dd4e3cd1cdf3",
+   "path": "vendor/gsap/Observer.js",
+   "size": 25427,
+   "tier": "shell"
+  },
+  {
+   "hash": "f485d91755d243d345d9",
+   "path": "vendor/gsap/ScrollTrigger.js",
+   "size": 109927,
+   "tier": "shell"
+  },
+  {
+   "hash": "7210e5562d6b1d4b4385",
+   "path": "vendor/gsap/gsap-core.js",
+   "size": 170523,
+   "tier": "shell"
+  },
+  {
+   "hash": "070038235ba75ec2186d",
+   "path": "vendor/gsap/index.js",
+   "size": 664,
+   "tier": "shell"
+  },
+  {
+   "hash": "e57cedd1acaa124891c6",
+   "path": "vendor/lenis/lenis.mjs",
+   "size": 24545,
+   "tier": "shell"
+  },
+  {
+   "hash": "108b4e57c9c796d3d38d",
+   "path": "vendor/licenses/archivo.OFL.txt",
+   "size": 4388,
+   "tier": "shell"
+  },
+  {
+   "hash": "1ac6d8f09b9c4fed1ecb",
+   "path": "vendor/licenses/gsap.LICENSE.txt",
+   "size": 563,
+   "tier": "shell"
+  },
+  {
+   "hash": "bba15b1137346a73ed8c",
+   "path": "vendor/licenses/lenis.LICENSE.txt",
+   "size": 1096,
+   "tier": "shell"
+  },
+  {
+   "hash": "4c40a1ef62450b857c3b",
+   "path": "vendor/licenses/three.LICENSE.txt",
+   "size": 1081,
+   "tier": "shell"
+  },
+  {
+   "hash": "ce1fa418de16a19495a9",
+   "path": "vendor/three/build/three.module.js",
+   "size": 1314681,
+   "tier": "shell"
+  },
+  {
+   "hash": "80efaadea4f8a636a65f",
+   "path": "vendor/three/examples/jsm/controls/OrbitControls.js",
+   "size": 32134,
+   "tier": "shell"
+  },
+  {
+   "hash": "85869bdd22f7cf0b22e6",
+   "path": "vendor/three/examples/jsm/environments/RoomEnvironment.js",
+   "size": 3606,
+   "tier": "shell"
+  },
+  {
+   "hash": "4a58808a6e3a48f2a98e",
+   "path": "vendor/three/examples/jsm/lines/LineMaterial.js",
+   "size": 10986,
+   "tier": "shell"
+  },
+  {
+   "hash": "9dcce823f86d7f00c4fa",
+   "path": "vendor/three/examples/jsm/lines/LineSegments2.js",
+   "size": 9607,
+   "tier": "shell"
+  },
+  {
+   "hash": "213a12e0e1ea878495d4",
+   "path": "vendor/three/examples/jsm/lines/LineSegmentsGeometry.js",
+   "size": 4693,
+   "tier": "shell"
+  },
+  {
+   "hash": "a0a83c88b269c94e25b6",
+   "path": "vendor/three/examples/jsm/loaders/STLLoader.js",
+   "size": 10043,
+   "tier": "shell"
+  },
+  {
+   "hash": "d234e578618fa816955e",
+   "path": "vendor/three/examples/jsm/postprocessing/EffectComposer.js",
+   "size": 4651,
+   "tier": "shell"
+  },
+  {
+   "hash": "328cf7db0da5d9be83ff",
+   "path": "vendor/three/examples/jsm/postprocessing/MaskPass.js",
+   "size": 2231,
+   "tier": "shell"
+  },
+  {
+   "hash": "32f879d2179087676631",
+   "path": "vendor/three/examples/jsm/postprocessing/OutputPass.js",
+   "size": 2524,
+   "tier": "shell"
+  },
+  {
+   "hash": "b3c6128340eaa37e40a6",
+   "path": "vendor/three/examples/jsm/postprocessing/Pass.js",
+   "size": 1706,
+   "tier": "shell"
+  },
+  {
+   "hash": "6c9b8a539ea16e898f65",
+   "path": "vendor/three/examples/jsm/postprocessing/RenderPass.js",
+   "size": 1941,
+   "tier": "shell"
+  },
+  {
+   "hash": "3b28a1ee27e0eb96c0ea",
+   "path": "vendor/three/examples/jsm/postprocessing/ShaderPass.js",
+   "size": 1576,
+   "tier": "shell"
+  },
+  {
+   "hash": "7de0bb70e3c1d6da5841",
+   "path": "vendor/three/examples/jsm/renderers/CSS2DRenderer.js",
+   "size": 4701,
+   "tier": "shell"
+  },
+  {
+   "hash": "5fbc4f012917c03eebd0",
+   "path": "vendor/three/examples/jsm/renderers/CSS3DRenderer.js",
+   "size": 8092,
+   "tier": "shell"
+  },
+  {
+   "hash": "4e3346db194db56a596c",
+   "path": "vendor/three/examples/jsm/shaders/CopyShader.js",
+   "size": 571,
+   "tier": "shell"
+  },
+  {
+   "hash": "b2c45ad02565a8e6b6fe",
+   "path": "vendor/three/examples/jsm/shaders/FXAAShader.js",
+   "size": 6621,
+   "tier": "shell"
+  },
+  {
+   "hash": "4944cecd49c0d4d1520a",
+   "path": "vendor/three/examples/jsm/shaders/OutputShader.js",
+   "size": 1490,
+   "tier": "shell"
+  },
+  {
+   "hash": "c25b7930e570e9ec5617",
+   "path": "vendor/three/examples/jsm/utils/BufferGeometryUtils.js",
+   "size": 31768,
+   "tier": "shell"
+  }
+ ],
+ "v": 1
+}
