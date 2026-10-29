@@ -218,6 +218,7 @@ export async function createStage(canvas, { onLoadProgress = () => {}, theme = D
   let raf = 0
   let last = null
   let lastFrameAt = performance.now() // watchdog: when a frame last completed
+  let framesDrawn = 0 // the page's health check reads this (getFrameCount) to tell a usable GPU from a crawling one
   let lost = false // WebGL context lost (iOS kills it under memory pressure); nothing may touch the GPU until restored
   let acc = 0
   let time = 0
@@ -446,6 +447,7 @@ export async function createStage(canvas, { onLoadProgress = () => {}, theme = D
     fx.render(dt, time)
     labelRenderer.render(scene, camera)
     lastFrameAt = performance.now()
+    framesDrawn++
     if (!cap30) { // budget governor: only fed by back-to-back full-rate frames
       if (lastRender !== null) governor.sample(now - lastRender)
       lastRender = now
@@ -679,6 +681,7 @@ export async function createStage(canvas, { onLoadProgress = () => {}, theme = D
         if (!studio.revealed) stage.reveal()
       }
     },
+    getFrameCount() { return framesDrawn },
     pause() { paused = true; stop() },
     resume() { paused = false; start() },
     dispose() {

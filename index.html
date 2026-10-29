@@ -71,7 +71,7 @@ setTimeout(failsafe, 9000);
 <link rel="stylesheet" href="css/offline.css">
 <script type="importmap">
 { "imports": {
-  "three": "./vendor/three/build/three.module.js",
+  "three": "./vendor/three/build/three.module.min.js",
   "three/addons/": "./vendor/three/examples/jsm/",
   "gsap": "./vendor/gsap/index.js",
   "gsap/ScrollTrigger": "./vendor/gsap/ScrollTrigger.js",
@@ -206,7 +206,7 @@ setTimeout(failsafe, 9000);
       <p>Each policy sees an overhead and a wrist camera, plus its own six joint positions. At the grasp the gripper hides the noodle from overhead, so the wrist view keeps it visible.</p>
       <figure class="feed">
         <div class="feed-screen" data-clip>
-          <video id="feed-video" src="media/observation-streams.mp4" poster="media/observation-streams.jpg" autoplay muted loop playsinline preload="metadata" width="600" height="225" aria-label="Two camera streams side by side: the overhead view of the table on the left, the wrist camera view of the gripper on the right, playing an episode from the training set."></video>
+          <video id="feed-video" src="media/observation-streams.mp4" poster="media/observation-streams.jpg" muted loop playsinline preload="none" width="600" height="225" aria-label="Two camera streams side by side: the overhead view of the table on the left, the wrist camera view of the gripper on the right, playing an episode from the training set."></video>
           <button type="button" class="clip-play" aria-label="Play the camera streams" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg></button>
           <span class="feed-tag feed-tag--l">overhead 800×600</span>
           <span class="feed-tag feed-tag--r">wrist 640×480</span>

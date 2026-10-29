@@ -1,81 +1,9 @@
 {
  "files": [
   {
-   "hash": "43f2f6dd98f10a872345",
-   "path": "assets/so101/assets/base_motor_holder_so101_v1.stl",
-   "size": 225084,
-   "tier": "shell"
-  },
-  {
-   "hash": "2aee2c6ae7e1b48f1384",
-   "path": "assets/so101/assets/base_so101_v2.stl",
-   "size": 150084,
-   "tier": "shell"
-  },
-  {
-   "hash": "9e8692f74d86e3e2d92e",
-   "path": "assets/so101/assets/motor_holder_so101_base_v1.stl",
-   "size": 210084,
-   "tier": "shell"
-  },
-  {
-   "hash": "17de08f2bae0c4702f15",
-   "path": "assets/so101/assets/motor_holder_so101_wrist_v1.stl",
-   "size": 210084,
-   "tier": "shell"
-  },
-  {
-   "hash": "4085ece61289e2cd126c",
-   "path": "assets/so101/assets/moving_jaw_so101_v1.stl",
-   "size": 375084,
-   "tier": "shell"
-  },
-  {
-   "hash": "ed2421bce0d1eae01b35",
-   "path": "assets/so101/assets/rotation_pitch_so101_v1.stl",
-   "size": 210084,
-   "tier": "shell"
-  },
-  {
-   "hash": "fdace097f71ab94b89e0",
-   "path": "assets/so101/assets/sts3215_03a_no_horn_v1.stl",
-   "size": 225084,
-   "tier": "shell"
-  },
-  {
-   "hash": "5fee9ad60327240b6d62",
-   "path": "assets/so101/assets/sts3215_03a_v1.stl",
-   "size": 225084,
-   "tier": "shell"
-  },
-  {
-   "hash": "101c2ca06bacc6f079f0",
-   "path": "assets/so101/assets/under_arm_so101_v1.stl",
-   "size": 300084,
-   "tier": "shell"
-  },
-  {
-   "hash": "cdcbfb9f67f946e603e1",
-   "path": "assets/so101/assets/upper_arm_so101_v1.stl",
-   "size": 275084,
-   "tier": "shell"
-  },
-  {
-   "hash": "2533821846d1e977a83a",
-   "path": "assets/so101/assets/waveshare_mounting_plate_so101_v2.stl",
-   "size": 62784,
-   "tier": "shell"
-  },
-  {
-   "hash": "7097c9997a6593fd4ff2",
-   "path": "assets/so101/assets/wrist_roll_follower_so101_v1.stl",
-   "size": 350084,
-   "tier": "shell"
-  },
-  {
-   "hash": "9ae8b672759c835b4491",
-   "path": "assets/so101/assets/wrist_roll_pitch_so101_v2.stl",
-   "size": 375084,
+   "hash": "851ff87ff5cd96704562",
+   "path": "assets/so101/meshes.bin.gz",
+   "size": 1003207,
    "tier": "shell"
   },
   {
@@ -85,9 +13,9 @@
    "tier": "shell"
   },
   {
-   "hash": "7f0a4e9eff604550ad85",
+   "hash": "44e1857fd959495310fc",
    "path": "css/base.css",
-   "size": 9269,
+   "size": 9537,
    "tier": "shell"
   },
   {
@@ -181,15 +109,15 @@
    "tier": "shell"
   },
   {
-   "hash": "d41a956cec172b594f16",
+   "hash": "95d8199e96135fa6200b",
    "path": "index.html",
-   "size": 27637,
+   "size": 27628,
    "tier": "shell"
   },
   {
-   "hash": "9c6a5139c798cc51a645",
+   "hash": "9dc43c2a92d506dce161",
    "path": "js/main.js",
-   "size": 10418,
+   "size": 13908,
    "tier": "shell"
   },
   {
@@ -289,6 +217,12 @@
    "tier": "shell"
   },
   {
+   "hash": "45f9179924500e780cd2",
+   "path": "js/stage/meshpack.js",
+   "size": 4503,
+   "tier": "shell"
+  },
+  {
    "hash": "15f40d707fc5d9741f2f",
    "path": "js/stage/modes.js",
    "size": 2397,
@@ -361,9 +295,9 @@
    "tier": "shell"
   },
   {
-   "hash": "0bb5a41699a59d72ac64",
+   "hash": "7a1b30b4dac46dd6bad0",
    "path": "js/stage/robot.js",
-   "size": 6266,
+   "size": 6961,
    "tier": "shell"
   },
   {
@@ -391,9 +325,9 @@
    "tier": "shell"
   },
   {
-   "hash": "f964436929242ecf9d2e",
+   "hash": "9f9b5b84393dae373f9a",
    "path": "js/stage/stage.js",
-   "size": 35110,
+   "size": 35289,
    "tier": "shell"
   },
   {
@@ -463,9 +397,9 @@
    "tier": "shell"
   },
   {
-   "hash": "db0ec1e268769a417daf",
+   "hash": "60e60f795c05c332a346",
    "path": "js/ui/gl-probe.js",
-   "size": 3265,
+   "size": 4036,
    "tier": "shell"
   },
   {
@@ -535,9 +469,15 @@
    "tier": "shell"
   },
   {
-   "hash": "fd925ffc0994e3c66a86",
+   "hash": "84aa20af68696d6b5688",
+   "path": "js/ui/stage-health.js",
+   "size": 1837,
+   "tier": "shell"
+  },
+  {
+   "hash": "d20dadd17eba3f09a6f4",
    "path": "js/ui/stage-proxy.js",
-   "size": 3012,
+   "size": 3119,
    "tier": "shell"
   },
   {
@@ -829,9 +769,9 @@
    "tier": "shell"
   },
   {
-   "hash": "ce1fa418de16a19495a9",
-   "path": "vendor/three/build/three.module.js",
-   "size": 1314681,
+   "hash": "08fd7545d13d2c7fb65a",
+   "path": "vendor/three/build/three.module.min.js",
+   "size": 691648,
    "tier": "shell"
   },
   {

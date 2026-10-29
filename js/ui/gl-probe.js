@@ -44,18 +44,39 @@ const remember = () => { try { localStorage.setItem(KEY, '1'); } catch { /* priv
 export function showHardwareNote(renderer = '') {
   if (dismissed()) return;
   const chrome = /Chrome\//.test(navigator.userAgent) && !/Edg\/|OPR\//.test(navigator.userAgent);
+  showNote('The 3D scene needs hardware acceleration. Turn it on in your browser settings and reload to see it.'
+    + (chrome ? ' In Chrome: Settings → System → “Use graphics acceleration when available”, then relaunch Chrome.' : '')
+    + (renderer ? ` (Your browser reports: ${renderer}.)` : ''), { onDismiss: remember });
+}
+
+// Same pill, for a GPU that passed the probe but can't keep the scene moving. `onRetry` brings the 3D back.
+export function showSlowNote(onRetry) {
+  const note = showNote('This device’s graphics can’t run the 3D scene smoothly, so the page shows the real footage instead.', {
+    action: { label: 'Try 3D anyway', run: () => { note.remove(); onRetry(); } },
+  });
+  return note;
+}
+
+function showNote(message, { action = null, onDismiss = () => {} } = {}) {
   const note = document.createElement('div');
   note.className = 'gl-note';
   note.setAttribute('role', 'note');
   const text = document.createElement('p');
-  text.textContent = 'The 3D scene needs hardware acceleration. Turn it on in your browser settings and reload to see it.'
-    + (chrome ? ' In Chrome: Settings → System → “Use graphics acceleration when available”, then relaunch Chrome.' : '')
-    + (renderer ? ` (Your browser reports: ${renderer}.)` : '');
+  text.textContent = message;
+  if (action) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'gl-note-action';
+    btn.textContent = action.label;
+    btn.addEventListener('click', action.run);
+    text.append(' ', btn);
+  }
   const close = document.createElement('button');
   close.type = 'button';
   close.setAttribute('aria-label', 'Dismiss this note');
   close.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-  close.addEventListener('click', () => { remember(); note.remove(); });
+  close.addEventListener('click', () => { onDismiss(); note.remove(); });
   note.append(text, close);
   document.body.append(note);
+  return note;
 }

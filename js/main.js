@@ -1,6 +1,7 @@
 import { $, reduced, useMock, forceNoGL } from './ui/env.js';
 import { createStageProxy } from './ui/stage-proxy.js';
-import { probeGL, showHardwareNote } from './ui/gl-probe.js';
+import { probeGL, showHardwareNote, showSlowNote } from './ui/gl-probe.js';
+import { watchStageHealth } from './ui/stage-health.js';
 import { applyTheme, currentTheme, themeFromURL, initThemeSwitcher } from './ui/theme.js';
 import { initLoader } from './ui/loader.js';
 import { initScroll } from './ui/scroll.js';
@@ -44,8 +45,8 @@ const loader = safe('loader', initLoader, idleLoader) ?? idleLoader;
 // The rest of the page talks to a proxy, so the real stage can attach at any time. On a busy machine it
 // may take far longer than the page is willing to hold the loader: after a soft deadline the page reveals
 // itself over the static poster background and the stage fades in whenever it arrives.
-const SOFT_MS = 8000;       // reveal the page by then unless the stage is visibly still progressing
-const SOFT_MAX_MS = 25000;  // ...but never hold the loader longer than this
+const SOFT_MS = 5000;       // reveal the page by then unless the stage is visibly still progressing
+const SOFT_MAX_MS = 10000;  // ...but never hold the loader longer than this
 const IDLE_MS = 2000;       // "still progressing" = onLoadProgress advanced within this window
 const t0 = performance.now();
 let lastProgress = t0;
@@ -63,16 +64,31 @@ function startStage() {
     .then((mod) => mod.createStage(canvas, { onLoadProgress, theme: themeName }));
 }
 
-// Resolves with the stage, an error (real failure), or { slow: true } when the page should stop waiting.
+// While the stage boots, the page's own frame rate is the tell for a GPU that can't cope: compiling the scene's shaders on
+// one stalls every frame for seconds (measured: ~1 fps on a software GPU that posed as hardware), where a slow network or a
+// busy CPU never does. That case stops waiting early and keeps the scene parked once it arrives.
+const CRAWL_AFTER_MS = 3000; // never judged before this (font swap, module parse)
+const CRAWL_FPS = 5;         // page frames per second over the last CRAWL_SPAN_MS
+const CRAWL_SPAN_MS = 2500;
+
+// Resolves with the stage, an error (real failure), or { slow: true, crawling? } when the page should stop waiting.
 function settleOrGiveUp(pending) {
   return new Promise((resolve) => {
     let done = false;
+    const frames = [];
+    let visibleSince = document.hidden ? Infinity : performance.now(); // a background tab draws no frames: not a crawl
+    const onVis = () => { frames.length = 0; visibleSince = document.hidden ? Infinity : performance.now(); };
+    document.addEventListener('visibilitychange', onVis);
+    const meter = (now) => { if (done) { document.removeEventListener('visibilitychange', onVis); return; } frames.push(now); requestAnimationFrame(meter); };
+    requestAnimationFrame(meter);
     pending.then((stage) => { if (!done) { done = true; resolve({ stage }); } }, (error) => { if (!done) { done = true; resolve({ error }); } });
     const check = () => {
       if (done) return;
       const now = performance.now();
       const waited = now - t0;
-      if (waited >= SOFT_MAX_MS || (waited >= SOFT_MS && now - lastProgress >= IDLE_MS)) { done = true; resolve({ slow: true }); return; }
+      while (frames.length && frames[0] < now - CRAWL_SPAN_MS) frames.shift();
+      const crawling = waited >= CRAWL_AFTER_MS && now - visibleSince >= CRAWL_SPAN_MS && (frames.length * 1000) / CRAWL_SPAN_MS < CRAWL_FPS;
+      if (crawling || waited >= SOFT_MAX_MS || (waited >= SOFT_MS && now - lastProgress >= IDLE_MS)) { done = true; resolve({ slow: true, crawling }); return; }
       setTimeout(check, 250);
     };
     setTimeout(check, 250);
@@ -95,6 +111,7 @@ function attachLate(real) {
   safe('resync', () => scrollHandle?.resync());          // current chapter and scrub progress, not hero
   safe('reveal', () => (atHero ? real.reveal?.() : igniteWithoutDolly(real)));
   if (!atHero) safe('resync', () => scrollHandle?.resync());
+  if (pauseReasons.has('slow')) { real.pause(); return; } // parked: stays behind the poster until "Try 3D anyway"
   safe('sandbox', () => sandbox?.enable());
 
   // Crossfade: the poster stays underneath while the canvas fades in (CSS transition on #stage).
@@ -106,6 +123,7 @@ function attachLate(real) {
 const pending = startStage();
 const outcome = await settleOrGiveUp(pending);
 let stageError = null;
+const parkOnBoot = !!outcome.crawling; // parked below, once the sandbox it disables exists
 if (outcome.stage) {
   proxy.attach(outcome.stage);
   safe('theme', () => outcome.stage.setTheme?.(themeName));
@@ -117,9 +135,11 @@ if (outcome.stage) {
     console.info('3D stage unavailable, using the static background.', outcome.error.message);
     if (outcome.error.hardware) safe('gl note', () => showHardwareNote(outcome.error.renderer));
   } else {
-    console.info('3D stage is slow to load: showing the page now, the scene will fade in when ready.');
+    if (!outcome.crawling) console.info('3D stage is slow to load: showing the page now, the scene will fade in when ready.');
     pending.then((real) => attachLate(real), (err) => {
       console.info('3D stage failed to load.', err?.message);
+      slowNote?.remove(); slowNote = null; // nothing left to "try anyway"
+      setPaused('slow', false);
       safe('sandbox', () => sandbox?.disable('The 3D reconstruction needs WebGL, which isn’t available here.'));
     });
   }
@@ -152,6 +172,7 @@ async function rebuildStage() {
 }
 document.addEventListener('stage:lost', () => root.classList.add('no-stage'));
 document.addEventListener('stage:restored', () => {
+  if (pauseReasons.has('slow')) return; // parked: stays behind the poster until "Try 3D anyway"
   root.classList.add('stage-fading');
   root.classList.remove('no-stage');
   setTimeout(() => root.classList.remove('stage-fading'), 1200);
@@ -184,6 +205,38 @@ if (new URLSearchParams(location.search).has('themes')) {
   safe('theme switcher', () => initThemeSwitcher((name) => { stage.setTheme(name); }));
 }
 safe('visibility', () => document.addEventListener('visibilitychange', () => setPaused('hidden', document.hidden)));
+
+// A GPU that passed the probe but can't keep up (or stopped drawing) gets the poster and the real footage, with a way back.
+// 'slow' is its own pause reason, so the parked stage stops competing with the page for the GPU.
+const FORCE_3D_KEY = 'tve-force-3d';
+const forced3d = () => { try { return sessionStorage.getItem(FORCE_3D_KEY) === '1'; } catch { return false; } };
+const health = forced3d() ? null : safe('stage health', () => watchStageHealth({
+  getFrames: () => proxy.getFrameCount(),
+  isActive: () => pauseReasons.size === 0 && !document.hidden && !root.classList.contains('no-stage'), // lost context, late boot: not drawing by design
+  onUnhealthy: (fps) => parkSlowStage(fps),
+}), null);
+if (parkOnBoot) parkSlowStage(0);
+
+let slowNote = null;
+function parkSlowStage(fps) {
+  if (forced3d() || pauseReasons.has('slow')) return;
+  console.info(`3D stage too slow here (${fps.toFixed(1)} fps): showing the static background.`);
+  root.classList.add('no-stage');
+  setPaused('slow', true);
+  safe('sandbox', () => sandbox?.disable('The 3D reconstruction is paused: this device’s graphics are too slow for it.'));
+  slowNote = safe('slow note', () => showSlowNote(() => {
+    slowNote = null;
+    try { sessionStorage.setItem(FORCE_3D_KEY, '1'); } catch { /* private mode */ }
+    health?.stop();
+    setPaused('slow', false);
+    if (!proxy.available) return; // still booting: attachLate fades it in when it arrives
+    root.classList.add('stage-fading');
+    root.classList.remove('no-stage');
+    setTimeout(() => root.classList.remove('stage-fading'), 1200);
+    safe('sandbox', () => sandbox?.enable());
+    safe('resync', () => scrollHandle?.resync());
+  }));
+}
 
 let cued = false;
 const cue = () => {

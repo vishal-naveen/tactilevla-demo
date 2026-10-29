@@ -163,6 +163,8 @@ body[data-chapter="hero"] .stage-badge { opacity: 0; }
 .gl-note p { margin: 0; font-size: var(--fs-caption); line-height: 1.45; color: var(--ivory); padding-top: 0.15rem; }
 .gl-note button { flex: none; width: 2.25rem; height: 2.25rem; display: grid; place-items: center; border-radius: 50%; }
 .gl-note button:hover { background: rgba(var(--ivory-rgb), 0.12); }
+.gl-note .gl-note-action { display: inline; width: auto; height: auto; padding: 0; border-radius: 0; color: var(--ivory); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 0.2em; }
+.gl-note .gl-note-action:hover { background: none; }
 .gl-note svg { width: 1rem; height: 1rem; fill: none; stroke: var(--ivory); stroke-width: 1.8; stroke-linecap: round; }
 
 /* ---- Portrait tablets: the honesty badge rides under the top bar (clear scene), not over the bottom text panels ---- */

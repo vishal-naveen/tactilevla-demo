@@ -69,7 +69,7 @@ def vendor_font(dest: Path) -> None:
 def main() -> None:
     if VENDOR.exists():
         shutil.rmtree(VENDOR)
-    n = vendor_modules([THREE + "build/three.module.js"], THREE, VENDOR / "three")
+    n = vendor_modules([THREE + "build/three.module.min.js"], THREE, VENDOR / "three")  # minified: ~100 KB less over the wire
     n += vendor_modules(addon_entries(), THREE, VENDOR / "three")
     n += vendor_modules([GSAP + "index.js", GSAP + "ScrollTrigger.js"], GSAP, VENDOR / "gsap")
     n += vendor_modules([LENIS_BASE + "dist/lenis.mjs"], LENIS_BASE + "dist/", VENDOR / "lenis")

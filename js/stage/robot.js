@@ -5,6 +5,7 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js'
 import { NOODLE } from './layout.js'
 import { computeGrasp } from './grasp.js'
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js'
+import { decodeMeshPack } from './meshpack.js'
 
 export const JOINT_NAMES = ['shoulder_pan', 'shoulder_lift', 'elbow_flex', 'wrist_flex', 'wrist_roll', 'gripper']
 export const JOINT_LABELS = ['Shoulder pan', 'Shoulder lift', 'Elbow flex', 'Wrist flex', 'Wrist roll', 'Gripper']
@@ -18,6 +19,8 @@ const SERVO_LINK_TO_JOINT = {
   gripper_link: 'gripper',
 }
 const URDF_URL = new URL('../../assets/so101/so101_new_calib.urdf', import.meta.url).href
+const PACK_URL = new URL('../../assets/so101/meshes.bin.gz', import.meta.url).href // baked by tools/meshes.html
+export const CREASE_DEG = 32
 
 function makeMaterials() {
   const ivory = new THREE.MeshPhysicalMaterial({
@@ -64,18 +67,30 @@ export async function loadRobot(onProgress = () => {}) {
     onProgress(t ? Math.min(1, l / t) : 0)
   }
 
-  const urdfText = await (await fetch(URDF_URL)).text()
+  bytes.set(PACK_URL, [0, 0])
+  const [urdfText, pack] = await Promise.all([
+    fetch(URDF_URL).then((r) => r.text()),
+    fetchWithProgress(PACK_URL, (g, t) => { bytes.set(PACK_URL, [g, t]); report() })
+      .then(({ buf }) => decodeMeshPack(buf))
+      .catch((err) => { console.warn('stage: mesh pack unavailable, loading the STLs', err); bytes.delete(PACK_URL); return new Map() }),
+  ])
   loadRobot.lastUrdf = urdfText
   const base = URDF_URL.slice(0, URDF_URL.lastIndexOf('/') + 1)
   const robot = buildURDF(urdfText, (file, done) => {
     const path = base + file
     let p = geoCache.get(path)
+    const packed = pack.get(file)
+    if (!p && packed) {
+      packed.computeBoundingBox()
+      p = Promise.resolve(packed)
+      geoCache.set(path, p)
+    }
     if (!p) {
       bytes.set(path, [0, 0])
       p = fetchWithProgress(path, (g, t) => { bytes.set(path, [g, t]); report() }).then(({ buf }) => {
         const raw = stl.parse(buf)
         raw.deleteAttribute('normal')
-        const geo = toCreasedNormals(raw, THREE.MathUtils.degToRad(32))
+        const geo = toCreasedNormals(raw, THREE.MathUtils.degToRad(CREASE_DEG))
         geo.computeBoundingBox()
         return geo
       })

@@ -21,7 +21,7 @@ SW = ROOT / "sw.js"
 
 SKIP_DIRS = {".git", "node_modules", "scripts", "tools", "__pycache__"}
 SKIP_NAMES = {".git", ".DS_Store", "sw.js", "sw-manifest.json", "dev.html", "LICENSE", "404.html", ".nojekyll", ".gitignore"}
-SKIP_SUFFIXES = {".md", ".py", ".log"}
+SKIP_SUFFIXES = {".md", ".py", ".log", ".stl"}  # STLs: source of assets/so101/meshes.bin.gz, only fetched if the pack is missing
 MEDIA_SUFFIXES = {".mp4", ".m4v", ".mov", ".webm"}
 
 

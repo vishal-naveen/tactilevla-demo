@@ -41,6 +41,7 @@ export function createStageProxy() {
     onTableClick(cb) { tableClicks.push(cb); if (real && typeof real.onTableClick === 'function') real.onTableClick(cb); },
     setPlaceHint: (on) => call('setPlaceHint', on),
     getPlaceHintScreenPos: () => (real && typeof real.getPlaceHintScreenPos === 'function' ? real.getPlaceHintScreenPos() : null),
+    getFrameCount: () => (real && typeof real.getFrameCount === 'function' ? real.getFrameCount() : null),
     pause: () => call('pause'),
     resume: () => call('resume'),
   };
