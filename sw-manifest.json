@@ -25,9 +25,9 @@
    "tier": "shell"
   },
   {
-   "hash": "7c5d310b62a3e8f77d8c",
+   "hash": "979873607bcad3574222",
    "path": "css/components.css",
-   "size": 13389,
+   "size": 13391,
    "tier": "shell"
   },
   {
@@ -115,9 +115,9 @@
    "tier": "shell"
   },
   {
-   "hash": "9dc43c2a92d506dce161",
+   "hash": "67372a994f9389fe3115",
    "path": "js/main.js",
-   "size": 13908,
+   "size": 13910,
    "tier": "shell"
   },
   {
@@ -391,12 +391,6 @@
    "tier": "shell"
   },
   {
-   "hash": "5ebe4c633efae355b110",
-   "path": "js/ui/fullscreen.js",
-   "size": 3581,
-   "tier": "shell"
-  },
-  {
    "hash": "60e60f795c05c332a346",
    "path": "js/ui/gl-probe.js",
    "size": 4036,
@@ -502,6 +496,12 @@
    "hash": "f3318175fd71f9ae8343",
    "path": "js/ui/tour.js",
    "size": 26392,
+   "tier": "shell"
+  },
+  {
+   "hash": "1b240d210b967f1aa698",
+   "path": "js/ui/video-expand.js",
+   "size": 3712,
    "tier": "shell"
   },
   {
@@ -757,9 +757,9 @@
    "tier": "shell"
   },
   {
-   "hash": "bba15b1137346a73ed8c",
+   "hash": "7d1896b31f2eed9f286b",
    "path": "vendor/licenses/lenis.LICENSE.txt",
-   "size": 1096,
+   "size": 1088,
    "tier": "shell"
   },
   {

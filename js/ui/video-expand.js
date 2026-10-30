@@ -1,6 +1,7 @@
 import { $$, reduced } from './env.js';
 import { guards, playback, setFullscreen } from './video-guard.js';
 
+// Don't rename this to fullscreen.js: uBlock Origin Lite blocks ||github.io/*/fullscreen.js, which stops js/main.js from booting.
 // A "Watch fullscreen" button on every <video> (hero inset, time-lapse, camera streams, film reels).
 // Click: start playback if paused (stays muted unless the reel was already engaged with sound), then put the VIDEO ELEMENT
 // itself in fullscreen (Fullscreen API, then webkit-prefixed, then iOS Safari's webkitEnterFullscreen: the only route on

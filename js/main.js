@@ -12,7 +12,7 @@ import { initSandbox } from './ui/sandbox.js';
 import { initPlaceHint } from './ui/place-hint.js';
 import { initFilm } from './ui/film.js';
 import { initClips } from './ui/media.js';
-import { initFullscreen } from './ui/fullscreen.js';
+import { initFullscreen } from './ui/video-expand.js';
 import { initTelemetry } from './ui/telemetry.js';
 import { initSafeArea } from './ui/safe-area.js';
 import { initTour } from './ui/tour.js';

@@ -166,7 +166,7 @@
   .lapse figcaption { font-size: 0.8125rem; }
 }
 
-/* Fullscreen button on every video (js/ui/fullscreen.js): top-right of the frame; hover/focus reveal on mouse devices,
+/* Fullscreen button on every video (js/ui/video-expand.js): top-right of the frame; hover/focus reveal on mouse devices,
    always visible on touch. The feed's pause toggle owns its top-right, so the feed's button sits top-left. */
 .fs-btn {
   position: absolute; right: 0.15rem; top: 0.15rem; z-index: 5; width: 2.75rem; height: 2.75rem;

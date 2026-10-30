@@ -14,7 +14,7 @@
    previous cache instead of being downloaded again, and old caches are deleted on activation. */
 'use strict';
 
-const MANIFEST_HASH = 'f25e240f0e370070'; // stamped by scripts/gen-sw-manifest.py
+const MANIFEST_HASH = '921fd7d9f5aca8ac'; // stamped by scripts/gen-sw-manifest.py
 const PREFIX = 'tvla-';
 const CACHE = PREFIX + MANIFEST_HASH;
 const SCOPE_URL = self.registration.scope;
