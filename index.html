@@ -48,8 +48,9 @@
 
 <div id="fl-hud" aria-hidden="true">
   <div class="fl-c fl-tl"><b>TACTILEVLA-EDGE</b><span>//// SO-101 / ONE TASK / ONE HELD-OUT CELL</span></div>
-  <div class="fl-c fl-tr"><span id="fl-scene">01 / 13  HALO</span><span id="fl-bar"><i></i></span></div>
-  <div class="fl-c fl-bl"><span id="fl-scrollhint">SCROLL OR ARROW KEYS</span></div>
+  <div class="fl-c fl-tr"><span class="fl-scenerow"><svg class="fl-loopg" viewBox="0 0 12 12" aria-hidden="true" data-loopui="glyph"><path d="M10.2 6.6A4.2 4.2 0 1 1 8.9 2.9"/><path d="M9.6 0.9v2.5H7.1"/></svg><span id="fl-scene">01 / 13  HALO</span></span><span id="fl-bar"><i></i></span></div>
+  <!-- round 16: the loop's hints share the scroll hint's place (hud.js): at 13 "keep scrolling", after the wrap "back at the start" -->
+  <div class="fl-c fl-bl"><span class="fl-hints"><span id="fl-scrollhint" data-loopui="hint">SCROLL OR ARROW KEYS</span><span class="fl-loophint" data-loopui="again"><svg class="fl-loopg" viewBox="0 0 12 12" aria-hidden="true"><path d="M10.2 6.6A4.2 4.2 0 1 1 8.9 2.9"/><path d="M9.6 0.9v2.5H7.1"/></svg><span class="d">KEEP SCROLLING TO START AGAIN</span><span class="m">SWIPE ON TO START AGAIN</span></span><span class="fl-loophint" data-loopui="back"><svg class="fl-loopg" viewBox="0 0 12 12" aria-hidden="true"><path d="M10.2 6.6A4.2 4.2 0 1 1 8.9 2.9"/><path d="M9.6 0.9v2.5H7.1"/></svg>BACK AT THE START</span></span></div>
   <div class="fl-c fl-br"><span class="fl-chip">3D: KINEMATIC RECONSTRUCTION, NOT POLICY OUTPUT</span></div>
   <div id="fl-lines" class="fl-lines"></div>
   <div id="fl-counter" class="fl-counter"></div>

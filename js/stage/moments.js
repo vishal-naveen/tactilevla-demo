@@ -31,6 +31,10 @@ void main(){
 let flightSeams = false
 /** @param {boolean} on true = the page sends its own seams (stage.setSeam); section changes play no hand-off */
 export function setFlightSeams(on) { flightSeams = !!on }
+// round 16 (flight only): the close keeps the hero's ring (the arc is already whole there, no flash, no extra rays), so the
+// loop's wrap from 13 onto 01 changes nothing in the ring; the default page keeps its close
+let flightClose = false
+export function setFlightClose(on) { flightClose = !!on }
 
 /**
  * @param {THREE.Scene} scene
@@ -137,7 +141,7 @@ export function createMoments(scene, { studio, off }) {
       tag.visible = b2.tagA > 0.01
 
       // close: the ring's arc completes its last gap, one flash, and the camera goes home to the hero's halo framing
-      const inClose = !OFF_CLOSE && s.chapter === 'results' && s.group === 'next'
+      const inClose = !OFF_CLOSE && !flightClose && s.chapter === 'results' && s.group === 'next'
       if (inClose && !close.on) { close.on = true; close.flashed = false }
       if (!inClose) close.on = false
       close.k = s.reduced ? (close.on ? 1 : 0) : ease(close.k, close.on ? 1 : 0, dt, close.on ? 1.6 : 3)

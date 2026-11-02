@@ -25,6 +25,16 @@ body { font-family: 'Archivo', system-ui, sans-serif; -webkit-font-smoothing: an
 #fl-scene { white-space: pre; color: rgba(var(--ivory-rgb), 0.92); }
 #fl-bar { display: block; width: 120px; height: 1px; background: rgba(var(--ivory-rgb), 0.18); }
 #fl-bar i { display: block; height: 1px; background: rgba(var(--ivory-rgb), 0.85); transform-origin: 0 0; transform: scaleX(0); }
+/* round 16: the loop's indicator, in the HUD's mono label voice: a loop glyph beside the counter while the wrap runs (turned by
+   the wrap's progress, not a clock), and the scroll hint's place shared with "keep scrolling" (at 13) / "back at the start" */
+.fl-scenerow { display: inline-flex; align-items: center; gap: 6px; }
+.fl-loopg { width: 9px; height: 9px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; transform-box: fill-box; transform-origin: center; }
+.fl-scenerow .fl-loopg { opacity: 0; color: rgba(var(--ivory-rgb), 0.78); }
+.fl-hints { display: grid; }
+.fl-hints > * { grid-area: 1 / 1; white-space: nowrap; }
+.fl-loophint { display: inline-flex; align-items: center; gap: 6px; opacity: 0; }
+.fl-loophint .m { display: none; }
+@media (max-width: 700px), (max-aspect-ratio: 1/1) { .fl-loophint .d { display: none; } .fl-loophint .m { display: inline; } }
 .fl-chip { padding: 3px 7px; border: 1px solid rgba(var(--ivory-rgb), 0.22); border-radius: 2px; color: rgba(var(--ivory-rgb), 0.82); }
 
 

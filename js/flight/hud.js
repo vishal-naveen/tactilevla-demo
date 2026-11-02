@@ -72,6 +72,11 @@ export function createHud({ envelope, quiet = false }) { // quiet: reduced motio
   const root = $('#fl-hud')
   const scene = $('#fl-scene'), bar = $('#fl-bar i')
   const counterEl = $('#fl-counter')
+  // round 16: the loop's indicator (index.html .fl-scenerow glyph, .fl-hints); "back at the start" holds ~2 s after the wrap
+  const LUI = Object.fromEntries([...document.querySelectorAll('[data-loopui]')].map((e) => [e.dataset.loopui, e]))
+  const lui = { loops: null, backT: null, o: {}, rot: '', bar: '', cur: 'hint', k: 1 }
+  const sm = (x) => { x = clamp01(x); return x * x * (3 - 2 * x) }
+  const setO = (k, v) => { const s = v < 0.004 ? '0' : v > 0.996 ? '1' : v.toFixed(3); if (lui.o[k] !== s && LUI[k]) { lui.o[k] = s; LUI[k].style.opacity = s } }
   const bracket = $('#fl-bracket'), ro = $('#fl-readout')
   const call = $('#fl-callouts'), svg = $('#fl-leader'), lead = svg.querySelector('path'), dot = svg.querySelector('circle')
   READOUTS[READOUTS.length - 1].lines = [`REACH / TOP-DOWN PICK / IK, NOT POLICY`, `ENVELOPE 0° ${envelope['0']} MM, ±45° ${envelope['45']}/${envelope['-45']} MM`]
@@ -188,7 +193,26 @@ export function createHud({ envelope, quiet = false }) { // quiet: reduced motio
       const si = ctx.sceneIdx
       const txt = `${String(si + 1).padStart(2, '0')} / ${String(ctx.scenes.length).padStart(2, '0')}  ${ctx.scenes[si].name}`
       if (txt !== sceneTxt) { sceneTxt = txt; scene.textContent = txt; if (!quiet && !ctx.instant) scramble(scene, 0.5) }
-      if (ctx.progress != null) { // round 10: progress round the loop; it fades out into the wrap and in after it (never runs back visibly)
+      if (ctx.loop) { // round 16: the bar's lit span runs on round the loop (empties forwards across the wrap), never jumps back
+        const L = ctx.loop, a = L.bar[0], bw = Math.max(0, L.bar[1] - a)
+        const tf = `translateX(${(a * 100).toFixed(2)}%) scaleX(${bw.toFixed(4)})`
+        if (tf !== lui.bar) { lui.bar = tf; bar.style.transform = tf; bar.style.opacity = '1' }
+        // indicator: at 13 the hint says "keep scrolling", the glyph by the counter turns with the wrap, then "back at the start"
+        if (lui.loops == null) lui.loops = L.loops
+        if (L.loops > lui.loops) lui.backT = 0
+        lui.loops = L.loops
+        if (lui.backT != null) { lui.backT += ctx.dt; if (lui.backT > 2.0) lui.backT = null }
+        // one label at a time in the hint's place: the shown one fades out (0.15 s) before the wanted one fades in, so two
+        // labels never overlap and none pops (reduced motion / capture: swapped at once)
+        const want = lui.backT != null ? 'back' : (L.wrapU != null || L.w13 > 0.5) ? 'again' : 'hint'
+        const fade = ctx.instant || quiet ? 1 : ctx.dt / 0.15
+        if (want !== lui.cur) { lui.k = Math.max(0, lui.k - fade); if (lui.k <= 0) lui.cur = want } else lui.k = Math.min(1, lui.k + fade)
+        for (const n of ['hint', 'again', 'back']) setO(n, n === lui.cur ? sm(lui.k) : 0)
+        const g = L.wrapU == null ? 0 : sm(Math.min(L.wrapU, 1 - L.wrapU) / 0.1)
+        setO('glyph', g)
+        const rot = g > 0 ? `rotate(${Math.round(L.wrapU * 360)}deg)` : ''
+        if (rot !== lui.rot && LUI.glyph) { lui.rot = rot; LUI.glyph.style.transform = rot }
+      } else if (ctx.progress != null) { // round 10: progress round the loop; it fades out into the wrap and in after it (never runs back visibly)
         const g = ctx.progress, o = Math.min(1, g / 0.015, (1 - g) / 0.015)
         bar.style.transform = `scaleX(${g.toFixed(4)})`; bar.style.opacity = o.toFixed(3)
       } else bar.style.transform = `scaleX(${(p / PMAX).toFixed(4)})` // FULL SITE: the whole flight

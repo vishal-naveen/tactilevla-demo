@@ -157,9 +157,9 @@
    "tier": "shell"
   },
   {
-   "hash": "515eb675b0e5553d5f66",
+   "hash": "a6eb0fd868a35c8803ff",
    "path": "css/flight.css",
-   "size": 54718,
+   "size": 55654,
    "tier": "shell"
   },
   {
@@ -247,9 +247,9 @@
    "tier": "shell"
   },
   {
-   "hash": "2614347791669237f44e",
+   "hash": "884f2eacd13859c70fc8",
    "path": "index.html",
-   "size": 30596,
+   "size": 31469,
    "tier": "shell"
   },
   {
@@ -265,15 +265,15 @@
    "tier": "shell"
   },
   {
-   "hash": "79977c18ed087b7f507a",
+   "hash": "0d757d2c55732a7b41c8",
    "path": "js/flight/director.js",
-   "size": 40274,
+   "size": 40515,
    "tier": "shell"
   },
   {
-   "hash": "e426c55809fffa095a9f",
+   "hash": "a000a0e6b87061cd2ca6",
    "path": "js/flight/hud.js",
-   "size": 15542,
+   "size": 17721,
    "tier": "shell"
   },
   {
@@ -283,9 +283,9 @@
    "tier": "shell"
   },
   {
-   "hash": "7b09f2f1b3b9ca8a69b8",
+   "hash": "f62c19d169a6fc7ff075",
    "path": "js/flight/nav.js",
-   "size": 66519,
+   "size": 69039,
    "tier": "shell"
   },
   {
@@ -295,9 +295,9 @@
    "tier": "shell"
   },
   {
-   "hash": "24c88671f7e3e591a6cd",
+   "hash": "78b839a1f828859e1763",
    "path": "js/flight/path.js",
-   "size": 17021,
+   "size": 18933,
    "tier": "shell"
   },
   {
@@ -493,9 +493,9 @@
    "tier": "shell"
   },
   {
-   "hash": "f0ca74194a58134df1fe",
+   "hash": "8f742f4d85bbd3331874",
    "path": "js/stage/moments.js",
-   "size": 8959,
+   "size": 9275,
    "tier": "shell"
   },
   {

@@ -9,7 +9,7 @@
 // ease curve no matter how unevenly the path's keys are spaced in p; a little p-linear share keeps pure state changes (no
 // camera motion) moving too. Between flights a sub-threshold scroll only nudges a tiny dolly (the page still breathes).
 // `?nav=scroll` keeps the old scroll-scrubbed model in director.js for A/B measurements (render/flight_smooth.mjs).
-import { SCENES, sample, resolveKeys, KEYS, ORBIT_C, LOOP_R, LOOP_H } from './path.js'
+import { SCENES, sample, resolveKeys, KEYS, ORBIT_C } from './path.js'
 
 // The stops (flight p). `dur` = the flight INTO this stop from its neighbour (either direction) when the content needs time
 // (the 160 landing, the scrubbed B2 pick); `lin` = time-linear in p (the count runs evenly; the camera barely moves there).
@@ -63,7 +63,7 @@ const OWNED_TOUCH = '[data-lenis-prevent]:not(.fls-main--sandbox), .vc, .fl-inde
 
 export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
   const N = { p: STOPS[0].p, idx: 0, flight: null, queued: 0, moved: false, nudge: 0, nudgeV: 0, nudgeT: 0, warp: null, tour: null,
-    veil: 0, vtint: 'ink', vdolly: 0, arriveT: 9, cam: null, camT: 0, vel: new Float64Array(6) } // round 7: veil level 0..1, its tint, the drift dolly (fraction of distance)
+    veil: 0, vtint: 'ink', vdolly: 0, arriveT: 9, cam: null, camT: 0, vel: new Float64Array(6), loops: 0 } // round 7: veil level 0..1, its tint, the drift dolly (fraction of distance); round 16: loops = forward wraps 13 -> 01 completed (hud.js "back at the start")
   const tmp = { pos: [0, 0, 0], look: [0, 0, 0], fov: 0, dx: 0, focus: 0, at: [0, 0, 0] }
 
   // --- round 9 flight engine ---------------------------------------------------------------------------------------
@@ -322,31 +322,37 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
   // their th change, so the ease averages half the rate), and the loop 13 -> 01 is one crane segment eased in TIME:
   // th back across the front on a ramp-cruise-ramp (LOOP_EA), r and h raised by LOOP_R / LOOP_H on a plateau, so the
   // camera rises over the front of the table and descends onto F1 without ever passing behind the arm.
-  const LOOP_EA = 0.28, loopEase = makeEase(0, LOOP_EA)
-  const plateau = (u) => smoother(Math.min(1, Math.min(u, 1 - u) / 0.42)) // 0 at both ends (C2), 1 over the middle
+  // ROUND 16 PENDULUM (owner: "make the transition from the 13->1 smoother ... absolutely seamless"): th travels across the
+  // front and BACK (path.js: 01 -> 10 rising, 11 the turnaround push-in, 12 -> 13 falling), each stop's rate signed by the
+  // direction its two segments share (a stop where the direction flips is a rest point), and 13 is F1's shot pulled back
+  // 20 cm along its view line: the loop 13 -> 01 is a straight dolly-in (a `line` segment, both ends at rest), WRAP_MIN q
+  // long so it keeps the pace and the text crossfade of an ordinary short segment (01 -> 02 peaks at ~0.19 m/s too).
+  const WRAP_MIN = 2.0
   const TN = 16000 // the q table's rows over the loop
   function buildGlobal() {
     const K = resolveKeys(ctx)
     const S = STOPS.map((s) => K.find((x) => Math.abs(x.p - s.p) < 1e-6))
     const m = S.length, T = 1
     const th = S.map((k) => k.orb.th)
-    const rest = S.map((k, j) => j === 0 || j === m - 1 || k.rest), line = S.map((k, j) => j + 1 < m && S[j + 1].line) // line[j]: segment j is straight
-    for (let j = 1; j < m; j++) if (!(th[j] > th[j - 1]) && !line[j - 1] && !line[j - 2]) console.warn('nav: the sweep is not monotone at stop', j, th[j - 1], th[j])
-    // raw t: open segments dt = dth (slope 1 deg per raw t), the first and last forward segments 2 dth (ease from / to rest),
-    // the loop as long as the sweep (resolution only: its pace comes from D)
+    // line[j]: segment j is straight (round 16: the loop m - 1 too, a dolly from 13 back in onto F1)
+    const rest = S.map((k, j) => j === 0 || j === m - 1 || k.rest), line = S.map((k, j) => j + 1 >= m || S[j + 1].line)
+    // round 16 pendulum: the sweep's direction per segment; a stop between two segments going opposite ways is a rest point
+    const sdir = th.map((x, j) => (j + 1 < m ? Math.sign(th[j + 1] - x) : 0))
+    for (let j = 1; j < m - 1; j++) if (!rest[j] && !line[j - 1] && !line[j] && sdir[j] !== sdir[j - 1]) rest[j] = true
+    // raw t: open segments dt = |dth| (slope 1 deg per raw t), segments easing from / to rest 2 |dth|, straight ones 4
+    // (resolution only: the pace comes from D)
     const raw = new Float64Array(m)
-    for (let j = 0; j < m - 1; j++) { const d = Math.max(0.25, th[j + 1] - th[j]); raw[j] = line[j] ? 4 : rest[j] !== rest[j + 1] ? 2 * d : d }
-    raw[m - 1] = th[m - 1] - th[0]
+    for (let j = 0; j < m; j++) { const d = Math.max(0.25, Math.abs((j + 1 < m ? th[j + 1] : th[0]) - th[j])); raw[j] = line[j] ? 4 : rest[j] !== rest[j + 1] ? 2 * d : d }
     const tot = raw.reduce((a, b) => a + b, 0)
     const t = new Float64Array(m + 1)
     let acc = 0; for (let j = 0; j < m; j++) { acc += raw[j] / tot; t[j + 1] = Math.round(acc * TN) / TN } // on the table's rows (TN): th runs on each segment's time share, a stop between rows left a flat step there
     t[m] = 1
-    const sl = th.map((_, j) => (rest[j] ? 0 : 1)) // deg per raw t at each stop (0 = the sweep rests there)
-    const P = S.map((k) => k.pos)
+    const sl = th.map((_, j) => (rest[j] ? 0 : sdir[j] || sdir[j - 1] || 1)) // deg per raw t at each stop (0 = the sweep rests there; signed)
+    const P = S.map((k) => k.pos); P.push(P[0])
     // per stop: [r, h, look x y z, fov, dx, focus, at x y z, p]; the closing copy = stop 0 one lap on
     const V = S.map((k) => [k.orb.r, k.orb.h, ...k.look, k.fov[0], k.dx[0], k.focus[0], ...k.at, k.p])
     V.push(V[0].slice()); V[m][11] += PU_LOOP
-    const G = { m, t, T, V, th, raw, sl, tot, line, P }
+    const G = { m, t, T, V, th, raw, sl, tot, line, P, sdir }
     Z.G = G
     // the global metric table over the whole loop (no seams: one pacing)
     const N = TN, us = new Float64Array(N + 1), ms = new Float64Array(N + 1), v = new Float64Array(NCH)
@@ -363,13 +369,10 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
       const A = V[j], B = V[j + 1], dth = j === m - 1 || line[j] ? 0 : Math.abs(th[j + 1] - th[j]) * (rest[j] && rest[j + 1] ? 1.875 : rest[j] || rest[j + 1] ? 2 : 1) * Math.PI / 180 // the sweep at one rate (an ease from / to rest: 2x)
       let turn = 0; poseAtT(t[j], pa)
       for (let k = 1; k <= 64; k++) { poseAtT(t[j] + (t[j + 1] - t[j]) * k / 64, pb); const da = dirOf(pa), db = dirOf(pb); turn += Math.acos(Math.min(1, da[0] * db[0] + da[1] * db[1] + da[2] * db[2])); pa.set(pb) }
-      let len = 0
-      if (j === m - 1) { poseAtT(t[j], pa); for (let k = 1; k <= 64; k++) { poseAtT(t[j] + (t[j + 1] - t[j]) * k / 64, pb); len += Math.hypot(pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]); pa.set(pb) } }
-      // the loop crane: its length at the cruise of a ramp-cruise-ramp ease (peak = mean / (1 - EA))
       // round 14: + acceleration floors (a smootherstep of size X over D peaks at 5.77 X / D^2): short segments with a pivot
       // shift or a crane (05 -> 06) otherwise reached 1.9 m/s^2 and 100 deg/s^2
       const lk = Math.hypot(B[2] - A[2], B[3] - A[3], B[4] - A[4])
-      D[j] = Math.max(dth / SC.pw, 1.875 * Math.hypot(B[0] - A[0], B[1] - A[1]) / VD, turn / WV, len / (1 - LOOP_EA) / 0.48, CMIN[j] ?? 0, 0.4,
+      D[j] = Math.max(dth / SC.pw, 1.875 * Math.hypot(B[0] - A[0], B[1] - A[1]) / VD, turn / WV, CMIN[j] ?? (j === m - 1 ? WRAP_MIN : 0), 0.4,
         Math.sqrt(5.77 * Math.hypot(B[0] - A[0], B[1] - A[1], lk) / 0.45), Math.sqrt(5.77 * turn / (32 * Math.PI / 180)))
       g[j] = (t[j + 1] - t[j]) / D[j]
     }
@@ -384,7 +387,7 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
       const Dq = new Float64Array(m), w = new Float64Array(m)
       for (let j = 0; j < m; j++) Dq[j] = ms[G.si[j + 1]] - ms[G.si[j]]
       const cap = (j, end) => { const other = end ? j : j + 1; return (rest[other] ? 2 : 1) * Math.abs(th[j + 1] - th[j]) / Math.max(1e-6, Dq[j]) }
-      for (let j = 0; j < m; j++) w[j] = rest[j] ? 0 : Math.min(cap(j - 1, 1), cap(j, 0))
+      for (let j = 0; j < m; j++) w[j] = rest[j] ? 0 : G.sl[j] * Math.min(cap(j - 1, 1), cap(j, 0)) // round 16: signed (the pendulum's way back falls)
       G.Dq = Dq; G.w = w
     }
     G.N = N; G.si = Array.from(t, (x) => Math.round(x * N)) // the stops' table rows
@@ -460,10 +463,7 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
     const e = smoother(u), A = V[j], B = V[j + 1]
     const bl = (i) => A[i] + (B[i] - A[i]) * e
     let thv, r = bl(0), hh = bl(1)
-    if (j === m - 1) { // the loop crane (in time): back across the front, up and out on a plateau, down onto F1
-      thv = G.th[m - 1] + (G.th[0] - G.th[m - 1]) * loopEase(u)
-      const c = plateau(u); r += LOOP_R * c; hh += LOOP_H * c
-    } else if (G.line[j]) { // round 14: a straight dolly (10 -> 11, the touch macro), both ends at rest
+    if (G.line[j]) { // round 14: a straight dolly (10 -> 11, the touch macro), both ends at rest; round 16: also the loop (13 -> 01, WRAP_PULL along F1's view line)
       const P0 = G.P[j], P1 = G.P[j + 1]
       for (let c = 0; c < 3; c++) out[c] = P0[c] + (P1[c] - P0[c]) * e
       for (let i = 0; i < 9; i++) out[3 + i] = bl(2 + i)
@@ -494,10 +494,11 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
     poseAtT(tt, out)
     const pu = out[12] - PU_LOOP * Math.floor(out[12] / PU_LOOP + 1e-9) // this lap's p
     const last = STOPS[NS - 1].p, mid = (last + PU_LOOP) / 2
-    if (pu > last) { // the loop: the close's state holds to its middle, then 01's; the island's light eases across it
-      out[12] = pu < mid ? last : 0
-      Z.pv = pu < mid ? last : 0.3 * (1 - smoother((pu - mid) / (PU_LOOP - mid)))
-    } else { out[12] = Math.max(0, pu); Z.pv = null }
+    // the loop: the close's state holds to its middle, then 01's (round 16: the island's light is already F1's at the close,
+    // path.js lightP, so it needs no easing across the wrap any more)
+    if (pu > last) out[12] = pu < mid ? last : 0
+    else out[12] = Math.max(0, pu)
+    Z.pv = null
     if (over > 0) { // rubber band at the very start (first visit): the path's own tangent at F1, saturating (C1 at q = 0:
       // F1 is no longer a rest point of the path, so a dolly would kink the velocity there), never a wrap
       const R = 0.25, f = R * (Math.exp(-over / R) - 1), v1 = new Float64Array(NCH)
@@ -512,14 +513,15 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
     return out
   }
   const segL = (i) => Z.Q[i + 1] - Z.Q[i]
-  const MIX = { a: 0, b: 0, u: 0 }
+  const MIX = { a: 0, b: 0, u: 0 }, LOOPUI = { loops: 0, w13: 0, wrapU: null, bar: [0, 0] }
   const stopQ = (j) => Z.Q[j] // stop j sits at the start of segment j
   const nearQ = (j, ref) => { const base = stopQ(j); if (!Z.looped) return base; return base + Math.round((ref - base) / Z.Qtot) * Z.Qtot }
   function activate() {
     if (!Z.G || Z.vp !== vpNow()) buildGlobal()
     if (Z.active) return
-    Z.active = true; Z.q = Z.tq = Z.dq = stopQ(N.idx); Z.v = 0; Z.tv = 0; Z.snapped = true
+    Z.active = true; Z.q = Z.tq = Z.dq = stopQ(N.idx); Z.v = 0; Z.tv = 0; Z.snapped = true; Z.lap = lapOf(Z.q)
   }
+  const lapOf = (q) => Math.floor(q / Z.Qtot + 1e-9)
   // ROUND 14 (owner: "if I scroll once at 13 it just goes to 2 instead of reseting to 1"): one gesture = one stop. A
   // trackpad swipe is 30-200 px in his log (0.25-1.6 q), longer than the short segments (13 -> 01 was 1.03 q, 01 -> 02 0.97),
   // and the target ran up to LEAD past the next stop, so the snap (35 % past the segment, or the stop the target could not
@@ -612,6 +614,8 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
     }
     if (Z.snapped && Z.tq === Z.dq && Math.abs(Z.q - Z.dq) < 2e-4 && Math.abs(Z.v) < 2e-3) { Z.q = Z.dq; Z.v = 0 }
     if (Z.q >= Z.Qtot) Z.looped = true
+    // round 16: a forward crossing of the loop's seam = the camera arrived on 01 through the wrap (backward ones only re-base)
+    { const lap = lapOf(Z.q); if (Z.lap != null && lap > Z.lap) N.loops++; Z.lap = lap }
     Z.moving = Z.q !== Z.dq || Z.v !== 0 || Z.tq !== Z.dq || Z.tv !== 0
     const v = camAt(Z.q, Z.out || (Z.out = new Float64Array(NCH)))
     const cam = N.cam || (N.cam = { pos: [0, 0, 0], look: [0, 0, 0], fov: 30, dx: 0, focus: 0, at: [0, 0, 0] })
@@ -671,6 +675,8 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
       if (f.chained) return // one queued stop at most
       N.idx = f.toIdx; start(f.toIdx + dir); return
     }
+    // round 16: reduced motion cuts stop to stop; past 13 it cuts round the loop to 01 (the hint at 13 promises it)
+    if (isReduced() && dir > 0 && N.idx === STOPS.length - 1 && !N.flight) { N.loops++; start(0); return }
     start(N.idx + dir)
   }
 
@@ -728,7 +734,7 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
       } else N.p = v[12]
       if (f.t >= f.dur) {
         N.p = f.to; N.idx = f.toIdx; N.flight = null; N.cam = null; N.camT = 0; N.vel.fill(0)
-        if (SCRUB) { activate(); Z.q = Z.tq = Z.dq = nearQ(f.toIdx, Z.q); Z.v = 0; Z.tv = 0; Z.snapped = true; Z.cur = -1 }
+        if (SCRUB) { activate(); Z.q = Z.tq = Z.dq = nearQ(f.toIdx, Z.q); Z.v = 0; Z.tv = 0; Z.snapped = true; Z.cur = -1; Z.lap = lapOf(Z.q) } // a fly-to onto 01 is not the loop
       }
     }
     // the new shot arrives already drifting: it starts 5 % further out and eases in (C1 at both ends)
@@ -866,6 +872,28 @@ export function createNav({ ctx, isReduced, isLive, onWarp, onIntent }) {
         m.a = i; m.b = (i + 1) % NS; m.u = Math.min(1, Math.max(0, (qq - Z.Q[i]) / segL(i))); return m
       }
       m.a = m.b = N.idx; m.u = 0; return m
+    },
+    /** round 16: the loop's indicator (hud.js). w13 = the close's text weight (its window round stop 13, nav.mix), wrapU = how
+     *  far along the wrap 13 -> 01 the camera is (scroll model only: a fly-to from 13 to 01 is not the loop), loops = forward
+     *  wraps completed, bar = the progress bar's lit span [from, to] in 0..1: it fills 01 -> 13, then across the wrap its
+     *  left end runs on to the right (it empties forwards, never jumps back), and it fills again from 01. */
+    get loop() {
+      const L = LOOPUI, m = this.mix, f = N.flight
+      L.loops = N.loops; L.w13 = 0; L.wrapU = null
+      if (m.a === m.b) L.w13 = m.a === NS - 1 ? 1 : 0
+      else { const w = mixWeights(m); L.w13 = m.a === NS - 1 ? w[0] : m.b === NS - 1 ? w[1] : 0 }
+      if (!f && m.a === NS - 1 && m.b === 0 && m.u > 0) L.wrapU = m.u
+      const Q = Z.Q, Q13 = Q ? Q[NS - 1] : 0
+      if (!Q || Q13 <= 0) { L.bar[0] = 0; L.bar[1] = N.p / STOPS[NS - 1].p }
+      else if (f && !f.veil) { const e = f.dur > 0 ? f.ease(Math.min(1, f.t / f.dur)) : 1; L.bar[0] = 0; L.bar[1] = (Q[f.fromIdx] + (Q[f.toIdx] - Q[f.fromIdx]) * e) / Q13 }
+      else if (SCRUB && Z.active) {
+        const qq = ((Z.q % Z.Qtot) + Z.Qtot) % Z.Qtot
+        if (!Z.looped && Z.q < 0) { L.bar[0] = 0; L.bar[1] = 0 }
+        else if (qq <= Q13) { L.bar[0] = 0; L.bar[1] = qq / Q13 }
+        else { L.bar[0] = (qq - Q13) / (Z.Qtot - Q13); L.bar[1] = 1 }
+      } else { L.bar[0] = 0; L.bar[1] = Q[N.idx] / Q13 }
+      L.bar[1] = Math.min(1, Math.max(L.bar[0], L.bar[1]))
+      return L
     },
     /** round 12: the scroll rate cap at the camera (q/s) and the pace numbers for tests */
     get pace() { return { rc: rcAt(Z.q), tv: Z.tv, v: Z.v, Qtot: Z.Qtot, rmax: SC.rmax } },

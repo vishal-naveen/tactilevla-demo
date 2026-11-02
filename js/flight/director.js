@@ -10,11 +10,11 @@ import { DEFAULT_THEME } from '../themes.js'
 import { createWorld } from './world.js'
 import { loadSurfaces, patchServo } from './surface.js'
 import { createHud } from './hud.js'
-import { sample, sceneAt, SCENES, PMAX, lookAt, SERVO_TH, SERVO_LIFT, SANDBOX_DIR } from './path.js'
+import { sample, sceneAt, SCENES, PMAX, lookAt, lightP, SERVO_TH, SERVO_LIFT, SANDBOX_DIR } from './path.js'
 import { MODES } from '../stage/modes.js' // round 13: limits parks the arm at home (flight only)
 import { setGridTone, setGridStyle } from '../stage/grid.js' // round 6: colour reserved for events (flight only; inert on the default page)
 import { tickScramble } from './scramble.js' // round 6: text decode clock
-import { setFlightSeams } from '../stage/moments.js' // round 6: one seam per chapter crossing (ours), not two
+import { setFlightSeams, setFlightClose } from '../stage/moments.js' // round 6: one seam per chapter crossing (ours), not two
 import { createNav, sceneStop } from './nav.js' // FULL SITE: Igloo-style stop-to-stop flights
 import { createScenes } from './scenes.js' // FULL SITE: scenes 08-13, chapter index, explore panels, media, keyboard/hash nav
 import { createIntro, INTRO_S, INTRO_LAND } from './intro.js' // INTRO: the opening build-in (intro2), its clock and its camera
@@ -39,6 +39,7 @@ stage.setTheme(DEFAULT_THEME)
 stage.setTextSafeArea(null)
 stage.setReducedMotion(reduced)
 setFlightSeams(!!stage.setSeam) // the flight's own seams replace Stage B's section hand-off (inert without setSeam)
+setFlightClose(true) // round 16: the close's ring = the hero's (no flash / rays at 13), so the loop's wrap onto 01 changes nothing
 stage.setSection('learned') // no hand-off seam on the way in (the group was null); the one seam fires at S8 (-> proof)
 stage.setPhaseMarkers(false)
 // round 11 ("Try it yourself" was dark and small): a closer, lower sandbox shot, fitted by the stage like its own (the rig,
@@ -324,7 +325,7 @@ function applyState(p, dt) {
   if (Math.abs(LK.ring - S.ringLevel) > 1e-4) { S.ringLevel = LK.ring; stage.setRingLevel?.(LK.ring) }
 
   // S0 build-in on the clock + the island's light and air as functions of p (js/flight/intro.js)
-  intro.apply(S.introT, SCROLLNAV ? p : nav.pv, dt, reduced) // INTRO (round 9b: a fly-to eases the island's light across its scene switch)
+  intro.apply(S.introT, lightP(SCROLLNAV ? p : nav.pv), dt, reduced) // INTRO (round 9b: a fly-to eases the island's light across its scene switch; round 16: lightP, the close is lit as F1)
 
   // camera
   // round 9: while a flight runs, the camera rides nav.js's C2 curve (pos / look / lens on one eased, arc-length clock);
@@ -483,7 +484,7 @@ function tick(dt) {
   // the only clock left is the opening's: the text fades in once over 0.6 s after the crane lands
   const mix = SCROLLNAV ? (() => { let b = 0; nav.STOPS.forEach((s, i) => { if (Math.abs(s.p - S.p) < Math.abs(nav.STOPS[b].p - S.p)) b = i }); return { a: b, b, u: 0 } })() : nav.mix
   S.textGate = CAPTURE || reduced ? 1 : S.introT < INTRO_LAND + 0.3 ? 0 : Math.min(1, (S.textGate || 0) + dt / 0.6)
-  hud.update(S.p, { sceneIdx: sceneAt(S.p), scenes: SCENES, insp: inspectK(S.p), progress: SCROLLNAV ? null : nav.progress, anchor, q: stage.getJointState().joints.elbow_flex, dt, instant: CAPTURE, mv, mix, gate: S.textGate })
+  hud.update(S.p, { sceneIdx: sceneAt(S.p), scenes: SCENES, insp: inspectK(S.p), progress: SCROLLNAV ? null : nav.progress, loop: SCROLLNAV ? null : nav.loop, anchor, q: stage.getJointState().joints.elbow_flex, dt, instant: CAPTURE, mv, mix, gate: S.textGate })
 
   sound.update(dt, S.p, intro.soundT(S.introT), reduced) // SOUND hook: one boolean check per frame while off
   scenes.update(S.p, dt, { instant: CAPTURE, mv, mix, gate: S.textGate }) // FULL SITE: scene panels, pins, index

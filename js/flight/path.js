@@ -32,10 +32,17 @@ const M1F1 = new URLSearchParams(location.search).get('off')?.split(',').include
 // points of the sweep (its rate eases from / to 0); the loop 13 -> 01 is a crane: up and out over the front of the table
 // (r + LOOP_R, h + LOOP_H at the top), back across the front, down onto F1 (nav.js). Close-ups are keys with a fixed
 // `pos` (their orbit params are derived) placed so the sweep stays monotone.
+// ROUND 16 PENDULUM (owner: "make the transition from the 13->1 smoother ... absolutely seamless ... unnoticeable"):
+// the sweep is ONE pendulum across the front. 01 -> 10 travel C side -> A side as above (01 -49 ... 10 +37, a rest
+// point), 11 touch is the push-in from 10 (the turnaround, also a rest), then 12 sandbox (front, ~-10) and 13 swing back
+// to the C side. 13 "the close" IS the hero shot pulled back: F1's own camera moved WRAP_PULL further out along its view
+// line (same look, lens, focus point), so the wrap 13 -> 01 is a straight dolly-in of WRAP_PULL with no turn at all (the
+// old crane was 10 q and ~1 m of travel). The world's light at the close is F1's too (lightP), so nothing but the
+// camera's 20 cm and the text changes across the wrap.
 export const ORBIT_C = [0.15, 0, 0.05]
 export const FRONT_O = [0.0388, 0] // shoulder_pan axis (x, z), measured: shoulder_link world pos at every pose
 export const FRONT_MAX = 75 // deg off +x
-export const LOOP_R = 0.32, LOOP_H = 0.62 // the loop crane's extra radius / height at its top (m)
+export const WRAP_PULL = 0.2 // m: the close = F1's camera this much further out along its view line (round 16; <= 0.25)
 const RAD = Math.PI / 180
 const orbPos = (th, r, h) => [ORBIT_C[0] + r * Math.cos(th * RAD), h, ORBIT_C[2] + r * Math.sin(th * RAD)]
 /** A camera position's orbit params about ORBIT_C (th unwrapped near `hint`). */
@@ -66,10 +73,13 @@ const R0 = 1.165, H0 = 0.323 // the sweep's base = F1's camera about ORBIT_C
 const TB = 40, TE = 15
 const C10 = around(JAW, TB, TE, 1.2), C11 = around(JAW, TB, TE, 0.36)
 
+// 01 F1 (intro2 2026-10-30: 9 deg above the table; ?off=intro2 = the M1 pose) and, round 16, 13 = the same shot pulled back
+const F1 = M1F1 ? { pos: [0.955, 0.521, -1.047], look: [0.02, 0.1, 0.14], fov: 30, dx: 0, focus: 4, at: [0.1, 0.08, 0.12] }
+  : { pos: [0.909, 0.323, -0.834], look: [0.05, 0.12, 0.12], fov: 30, dx: 0, focus: 3, at: [0.08, 0.14, 0.06] }
+const F1_BACK = (() => { const d = F1.pos.map((x, i) => x - F1.look[i]), l = Math.hypot(...d); return F1.pos.map((x, i) => x + d[i] / l * WRAP_PULL) })()
 export const KEYS = [
   // 01 F1 establishing (intro.js cranes down onto this pose; intro2 2026-10-30: 9 deg above the table). ?off=intro2 = M1 pose.
-  M1F1 ? { p: 0.000, pos: [0.955, 0.521, -1.047], look: [0.02, 0.1, 0.14], th: -49, fov: 30, dx: 0, focus: 4, at: [0.1, 0.08, 0.12] }
-    : { p: 0.000, pos: [0.909, 0.323, -0.834], look: [0.05, 0.12, 0.12], th: -49, fov: 30, dx: 0, focus: 3, at: [0.08, 0.14, 0.06] },
+  { p: 0.000, ...F1, th: -49 },
   // 02 the exploded arm from the front-left; then in onto the lifted elbow servo, a little below it
   { p: 0.108, th: -42, r: R0, h: H0, look: [0.03, 0.2, 0.05], fov: 28, dx: 0.1, focus: 3, at: [0.0, 0.24, 0.0] },
   { p: 0.170, pos: SV_CAM, th: -36, look: [SERVO_LIFTED[0], SERVO_LIFTED[1] + 0.004, SERVO_LIFTED[2]], fov: 16, dx: 0.06, focus: 10, at: SERVO_LIFTED },
@@ -96,14 +106,18 @@ export const KEYS = [
   // 11 touch: a macro on the jaw servo holding the noodle (the pin's bench number beside it), shallow focus
   { p: 1.450, pos: C11, th: 30, rest: true, line: true, look: [JAW[0] - 0.005, JAW[1] + 0.004, JAW[2] + 0.01], fov: 20, dx: 0.06, focus: 16, at: JAW },
   // 12 sandbox: the stage's own fitted sandbox shot, aimed from this slot (SANDBOX_DIR): its lens and lens shift must be the
-  // rig's or the hand-over to the stage's orbit pops, and the fit keeps the grid framed on phones
-  { p: 1.610, rig: shotOrb('sandbox', 55), focus: 0 },
-  // 13 what I built: the whole arm from the A side, pulled back (the ring comes in on the loop's crane, behind the arm at F1)
-  { p: 1.800, th: 70, r: R0, h: H0, look: [0.1, 0.15, 0.06], fov: 30, dx: 0.14, focus: 3, at: [0.06, 0.17, 0] },
+  // rig's or the hand-over to the stage's orbit pops, and the fit keeps the grid framed on phones. Round 16: on the
+  // pendulum's way back, from the front (was +50, the A side)
+  { p: 1.610, rig: shotOrb('sandbox', -10), focus: 0 },
+  // 13 what I built: round 16, the hero shot pulled back WRAP_PULL along its own view line (the ring behind the arm, as at
+  // 01): the loop onto 01 is a straight dolly-in (nav.js), no turn (was the A side at +70 and a 1 m crane back over the front)
+  { p: 1.800, ...F1, pos: F1_BACK, th: -49, rest: true },
 ]
-/** The sandbox shot's direction for this sweep (director.js overrides SHOTS.sandbox.dir with it): round 14 azimuth +50 (the A
- *  side, between touch and the close), 30 deg up (round 13b: -23). */
-export const SANDBOX_DIR = (() => { const t = 50 * RAD, f = 30 * RAD; return [Math.cos(f) * Math.cos(t), Math.sin(f), Math.cos(f) * Math.sin(t)] })()
+/** The sandbox shot's direction for this sweep (director.js overrides SHOTS.sandbox.dir with it): round 16 azimuth SB_AZ (the
+ *  front, on the pendulum's way back between touch and the close; round 14: +50, the A side), 40 deg up (was 30: the ring stood
+ *  cut at the top edge from the front; round 13b: -23). */
+export const SB_AZ = -12
+export const SANDBOX_DIR = (() => { const t = SB_AZ * RAD, f = 40 * RAD; return [Math.cos(f) * Math.cos(t), Math.sin(f), Math.cos(f) * Math.sin(t)] })()
 
 /** Round 13: no designed loop waypoints any more (the orbit's own spline carries 13 -> 01). Kept for old callers. */
 export function loopKeys() { return [] }
@@ -160,6 +174,15 @@ export function lookAt(p, out = { ring: 1, teal: 0, held: 0 }) {
   t = t * t * (3 - 2 * t)
   out.ring = a.ring + (b.ring - a.ring) * t; out.teal = a.teal + (b.teal - a.teal) * t; out.held = a.held + (b.held - a.held) * t
   return out
+}
+
+/** Round 16: the p the island's light follows (intro.js rake / air / mist / sheen are functions of it). The close (13) is lit as
+ *  F1 is: across 12 -> 13 the light p eases from where it already reads "past the opening" (0.3: rake off, air down) to 0,
+ *  so at the close and across the wrap onto 01 the rake, air, mist and sheen are F1's and nothing changes at the wrap. */
+export function lightP(p) {
+  if (p <= 1.61) return p
+  const x = Math.min(1, (p - 1.61) / (1.8 - 1.61))
+  return 0.3 * (1 - x * x * x * (x * (x * 6 - 15) + 10))
 }
 
 const COMPS = [['pos', 3], ['look', 3], ['fov', 1], ['dx', 1], ['focus', 1], ['at', 3]]
