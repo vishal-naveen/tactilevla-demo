@@ -591,4 +591,22 @@ html:not(.fl-live) .fls { scroll-margin-top: calc(var(--fl-idx-h, 100px) + 12px)
 
 /* 2026-11-02 (owner: "the start is just a little crowded"): on short desktop windows the fact tags give way so the text
    block never reaches the top-left chip or the bottom controls */
-@media (min-width: 701px) and (max-height: 760px) { .fl-tx .fl-facts { display: none; } }
+
+/* 2026-11-02 responsive fit (hud.js fit(); owner: "make it responsive to all screen sizes"): type follows the window's
+   height as well as its width, and a block that still doesn't fit between the top-left chrome and the controls steps down */
+@media (min-width: 701px) {
+  .fl-tx .fl-big { font-size: clamp(22px, min(2.5vw, 4.4vh), 40px); }
+  .fl-tx .fl-small { font-size: clamp(14px, min(1.12vw, 2.15vh), 18px); }
+  .fl-tx.fit-1 .fl-facts, .fl-tx.fit-2 .fl-note-l { display: none; }
+  .fl-tx.fit-3 { zoom: 0.9; }
+  .fl-tx.fit-4 { zoom: 0.8; }
+  .fl-tx.fit-5 .fl-more2 { display: none; }
+  .fl-tx.fit-6 .fl-small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+}
+/* short desktop windows (fitpanels check 2026-11-02: the sandbox panel ran 34 px into the controls at 1000x550): a smaller
+   picker and no caption row */
+@media (min-width: 701px) and (max-height: 640px) {
+  .fls-main--sandbox .picker { grid-template-columns: repeat(3, 40px); gap: 4px; }
+  .fls-main--sandbox .fl-cap, .fls-main--sandbox .picker-arm { display: none; }
+  .fls-main--sandbox .fl-h { font-size: clamp(22px, 4.4vh, 34px); }
+}

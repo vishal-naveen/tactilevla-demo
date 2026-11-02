@@ -157,9 +157,9 @@
    "tier": "shell"
   },
   {
-   "hash": "21262e074d347ed99a9a",
+   "hash": "515eb675b0e5553d5f66",
    "path": "css/flight.css",
-   "size": 53651,
+   "size": 54718,
    "tier": "shell"
   },
   {
@@ -247,9 +247,9 @@
    "tier": "shell"
   },
   {
-   "hash": "57d8adb102b7abac26fe",
+   "hash": "2614347791669237f44e",
    "path": "index.html",
-   "size": 30240,
+   "size": 30596,
    "tier": "shell"
   },
   {
@@ -271,9 +271,9 @@
    "tier": "shell"
   },
   {
-   "hash": "7eb267d6e27efbe9387e",
+   "hash": "e426c55809fffa095a9f",
    "path": "js/flight/hud.js",
-   "size": 13682,
+   "size": 15542,
    "tier": "shell"
   },
   {
@@ -319,9 +319,9 @@
    "tier": "shell"
   },
   {
-   "hash": "35dcdf55e47c14ca7fd3",
+   "hash": "f2a7898b5814f7e1ba44",
    "path": "js/flight/scenes.js",
-   "size": 31976,
+   "size": 32807,
    "tier": "shell"
   },
   {
@@ -691,9 +691,9 @@
    "tier": "shell"
   },
   {
-   "hash": "f8d6f744d671ac24b0e8",
+   "hash": "2159c87c4648f183ad84",
    "path": "js/ui/offline.js",
-   "size": 8020,
+   "size": 8240,
    "tier": "shell"
   },
   {

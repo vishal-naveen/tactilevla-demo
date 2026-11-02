@@ -147,7 +147,9 @@ export function initOffline({ swUrl = './sw.js', scope = './' } = {}) {
   const standalone = isStandalone();
   const wantAll = standalone || params.get('precache') === 'all';
   const info = (window.__offline = { supported: 'serviceWorker' in navigator, standalone, wantAll, state: 'idle', progress: 0, version: null });
-  if (!info.supported || params.has('nosw')) return;
+  // not on the local dev server unless asked (?sw): the cache-first worker served stale files after edits (2026-11-02)
+  const local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && !params.has('sw');
+  if (!info.supported || params.has('nosw') || local) return;
 
   const start = async () => {
     try {

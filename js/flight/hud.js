@@ -121,9 +121,35 @@ export function createHud({ envelope, quiet = false }) { // quiet: reduced motio
       blockOf.push(blocks.length - 1)
     }
   }
-  build()
-  let wasPhone = phoneNow()
-  addEventListener('resize', () => { const ph = phoneNow(); if (ph !== wasPhone) { wasPhone = ph; build() } }) // stop 0 swaps intro <-> short copy
+  // Responsive fit (owner 2026-11-02: "make it responsive to all screen sizes"; on short windows the opening ran into the
+  // top-left chip and the Explore / Sound controls). Desktop layout only (phones stack at the foot with their own clamps):
+  // every block must sit between the top-left chrome (brand + the chip, which moves there at some stops) and the controls
+  // above Sound. A block that doesn't fit gives way in order: fact tags, the note, type -10 %, type -20 %, the merged
+  // paragraphs, a 4-line body. Then it is nudged inside the box. Measured at build, on resize and once fonts load.
+  const FIT = ['fit-1', 'fit-2', 'fit-3', 'fit-4', 'fit-5', 'fit-6']
+  // the fitted rects, cached for scenes.js: a pin label that would land on the text in view hides itself
+  const cacheRects = () => { host.__rects = blocks.map(({ el }) => ({ el, r: el.getBoundingClientRect() })) }
+  function fit() {
+    for (const b of blocks) { b.el.classList.remove(...FIT); b.el.style.translate = '' }
+    if (phoneNow()) return cacheRects()
+    const tl = $('.fl-tl')?.getBoundingClientRect(), chip = $('.fl-chip')?.getBoundingClientRect(), snd = $('#fl-sound')?.getBoundingClientRect()
+    const top = (tl ? tl.bottom : 60) + (chip ? chip.height : 24) + 22
+    const bottom = (snd && snd.height ? snd.top : innerHeight - 70) - 44
+    for (const { el } of blocks) {
+      let r = el.getBoundingClientRect()
+      for (let k = 0; k < FIT.length && r.height > bottom - top; k++) { el.classList.add(FIT[k]); r = el.getBoundingClientRect() }
+      const dy = r.top < top ? top - r.top : r.bottom > bottom ? Math.max(top - r.top, bottom - r.bottom) : 0
+      if (dy) el.style.translate = `0 ${Math.round(dy)}px`
+    }
+    cacheRects()
+  }
+  build(); fit()
+  document.fonts?.ready.then(fit)
+  let wasPhone = phoneNow(), fitRaf = 0
+  addEventListener('resize', () => {
+    const ph = phoneNow(); if (ph !== wasPhone) { wasPhone = ph; build() } // stop 0 swaps intro <-> short copy
+    cancelAnimationFrame(fitRaf); fitRaf = requestAnimationFrame(fit)
+  })
   const want = []
   function setBlocks(mix, gate) {
     for (let k = 0; k < blocks.length; k++) want[k] = 0

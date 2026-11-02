@@ -236,6 +236,7 @@ export function createScenes({ stage, jump, nav, reduced, capture }) {
     const w = mixWeights(mix, false, true)
     return Math.max(pin.si.includes(mix.a) ? w[0] : 0, pin.si.includes(mix.b) ? w[1] : 0) * gate
   }
+  const textRects = () => document.getElementById('fl-text')?.__rects
   function drawPins(sceneA, gate, mix) {
     const ph = phone()
     PINS.forEach((pin, i) => {
@@ -254,6 +255,15 @@ export function createScenes({ stage, jump, nav, reduced, capture }) {
       // the label stays inside the frame and clear of the corner chrome (the leader bends to reach it)
       const room = ph ? 190 : 270, edge = ph ? 16 : 60 // ~ a label's width + the 32 px run; labels hang left (ox < 0) or right of the knee (round 14: phone 150 let the limits row-3 label run 26 px off the right edge)
       const kx = ox >= 0 ? Math.min(innerWidth - room, Math.max(edge, s.x + ox)) : Math.min(innerWidth - edge, Math.max(room, s.x + ox)), ky = Math.min(innerHeight - (ph ? 200 : 110), Math.max(ph ? 110 : 120, s.y + oy)), run = ox >= 0 ? 26 : -26
+      // 2026-11-02 (owner: "make it responsive to all screen sizes"): at small windows a label could land on the text in
+      // view (01's GRIPPER over the intro at 1000x550): such a pin hides. Text rects are cached by hud.js fit(), label
+      // sizes once per pin, so this reads no layout per frame.
+      const lx = ox >= 0 ? kx + run + 6 : kx + run - 6, ly = ky - 4
+      pin.lw ??= l.offsetWidth; pin.lh ??= l.offsetHeight
+      const bx0 = ox >= 0 ? lx : lx - pin.lw, bx1 = ox >= 0 ? lx + pin.lw : lx
+      if (textRects()?.some(({ el, r }) => +el.style.getPropertyValue('--a') > 0.05 && bx1 > r.left - 10 && bx0 < r.right + 10 && ly > r.top - 10 && ly - pin.lh < r.bottom + 10)) {
+        g.style.opacity = '0'; l.style.opacity = '0'; return
+      }
       g.firstChild.setAttribute('d', `M${s.x.toFixed(1)},${s.y.toFixed(1)} L${kx.toFixed(1)},${ky.toFixed(1)} L${(kx + run).toFixed(1)},${ky.toFixed(1)}`)
       g.lastChild.setAttribute('cx', s.x.toFixed(1)); g.lastChild.setAttribute('cy', s.y.toFixed(1))
       g.style.opacity = a.toFixed(3)
