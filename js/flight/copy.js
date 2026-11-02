@@ -7,11 +7,12 @@
 const intro = {
   kicker: 'TACTILEVLA-EDGE',
   headline: 'A robot arm that learns by watching.',
-  body: 'An open-source SO-101 arm, under $300, learned one job by imitation: pick up a foam noodle and drop it in a cup. ' +
-    'A person moved a twin arm by hand 160 times while two cameras recorded; two policies, ACT and SmolVLA-450M, learned from that. ' +
-    'B2, the table grid’s centre cell, was never practised. In 20 trials each across the whole grid, B2 included, ACT succeeded 18 times and SmolVLA 16. ' +
-    'Next: touch, read from the servos’ own load. Not built yet.',
-  look: 'What you’re looking at: a kinematic reconstruction of the arm built from its URDF, not live video and not policy output. The real footage is in chapter 08.',
+  // owner 2026-11-02: "the start is just a little crowded": the opening keeps three sentences; the servo paragraph
+  // moved to 02 (the arm pulled apart), the reconstruction note is the top-left chip, results come at 09
+  body: 'An open-source SO-101 arm, under $300, learned one job from 160 human demonstrations: pick up a foam noodle and drop it in a cup. ' +
+    'Then it was tested across the table, including B2, a cell it never practised. ' +
+    'In 20 trials each, ACT succeeded 18 times and SmolVLA 16.',
+  look: '',
   facts: ['160 DEMONSTRATIONS', '2 POLICIES', 'UNDER $300'],
 }
 
@@ -19,11 +20,11 @@ const intro = {
 // merged stop's headline + body follow as `more` (hud.js prints them under the body), facts are the union in order.
 const stops = [  { stop: 0, scene: 'S1', kicker: '01 / THE PROJECT', headline: 'A robot arm that learns by watching.',
     body: 'This is an SO-101, an open-source arm built for under $300. It was taught one job from 160 human demonstrations, then tested on a spot of the table it had never seen.',
-    more: [{ headline: 'Six joints, each one servo.', body: 'Every joint, from the base to these gripper jaws, is one Feetech STS3215 servo. The trained policy drives it by setting a target for each joint, in a control loop set to 30 times a second.' }],
-    facts: ['SO-101 FOLLOWER ARM', 'UNDER $300', '160 DEMONSTRATIONS', '6 FEETECH STS3215 SERVOS', 'CONTROL LOOP SET TO 30 HZ'] },
+    facts: ['SO-101 FOLLOWER ARM', 'UNDER $300', '160 DEMONSTRATIONS'] },
   { stop: 1, scene: 'S2', kicker: '02 / THE SETUP', headline: 'The setup: a sub-$300 arm.',
     body: 'Here the arm is pulled apart: 3D-printed links, one servo per joint. A person moves a leader arm by hand and this follower copies it. That is how every demonstration was recorded.',
-    facts: ['LINKS 3D-PRINTED PLA', 'COST UNDER $300', '≈1/100 THE COST OF RESEARCH ARMS'] },
+    more: [{ headline: 'Six joints, each one servo.', body: 'Every joint, from the base to these gripper jaws, is one Feetech STS3215 servo. The trained policy drives it by setting a target for each joint, in a control loop set to 30 times a second.' }],
+    facts: ['LINKS 3D-PRINTED PLA', '≈1/100 THE COST OF RESEARCH ARMS', '6 FEETECH STS3215 SERVOS', 'CONTROL LOOP SET TO 30 HZ'] },
   { stop: 2, scene: 'S2', kicker: '02 / ONE SERVO', headline: 'Each joint is one STS3215 servo.',
     body: 'The elbow servo, lifted out of the arm. Its labels are read from the arm’s URDF file at load. The same servo also reports the load on it, the signal the planned touch work will read.',
     facts: ['ELBOW FLEX, REVOLUTE JOINT', 'SOURCE: SO101_NEW_CALIB.URDF'] },

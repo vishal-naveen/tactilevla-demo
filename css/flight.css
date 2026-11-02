@@ -588,3 +588,7 @@ html:not(.fl-live) .fls { scroll-margin-top: calc(var(--fl-idx-h, 100px) + 12px)
 /* 2026-11-01 phone check: Stage B's B2 tag ("Reconstruction, staged light") ran off the right edge at 390 px; on phones the
    footer chip carries the same honesty line */
 @media (max-width: 700px) { .fl-live .stage-label--tag { display: none; } }
+
+/* 2026-11-02 (owner: "the start is just a little crowded"): on short desktop windows the fact tags give way so the text
+   block never reaches the top-left chip or the bottom controls */
+@media (min-width: 701px) and (max-height: 760px) { .fl-tx .fl-facts { display: none; } }
