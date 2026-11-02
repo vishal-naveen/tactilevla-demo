@@ -22,6 +22,7 @@ export function createStageProxy() {
     setPolicy: (...a) => call('setPolicy', ...a),
     setTheme: (...a) => call('setTheme', ...a),
     setRingProgress: (...a) => call('setRingProgress', ...a),
+    setSection: (...a) => call('setSection', ...a),
     setReducedMotion: (...a) => call('setReducedMotion', ...a),
     reveal: (...a) => call('reveal', ...a),
     getRingScreenRect: () => (real && typeof real.getRingScreenRect === 'function' ? real.getRingScreenRect() : null),

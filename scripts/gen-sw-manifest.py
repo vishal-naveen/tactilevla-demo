@@ -23,6 +23,9 @@ SKIP_DIRS = {".git", "node_modules", "scripts", "tools", "__pycache__"}
 SKIP_NAMES = {".git", ".DS_Store", "sw.js", "sw-manifest.json", "dev.html", "LICENSE", "404.html", ".nojekyll", ".gitignore"}
 SKIP_SUFFIXES = {".md", ".py", ".log", ".stl"}  # STLs: source of assets/so101/meshes.bin.gz, only fetched if the pack is missing
 MEDIA_SUFFIXES = {".mp4", ".m4v", ".mov", ".webm"}
+# the flight's big GPU / audio assets (KTX2 maps, HDR probes, sound banks: ~17 MB) are cached when first used, like
+# videos, not precached at install: as shell they took the install from 4 MB to 21 MB in every browser (2026-11-02)
+MEDIA_DIRS = {("assets", "flight"), ("assets", "env"), ("assets", "audio")}
 
 
 def digest(path: Path) -> str:
@@ -41,7 +44,7 @@ def collect() -> list[dict]:
             "path": rel.as_posix(),
             "size": p.stat().st_size,
             "hash": digest(p),
-            "tier": "media" if p.suffix.lower() in MEDIA_SUFFIXES else "shell",
+            "tier": "media" if p.suffix.lower() in MEDIA_SUFFIXES or tuple(rel.parts[:2]) in MEDIA_DIRS else "shell",
         })
     return files
 

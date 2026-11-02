@@ -2,8 +2,10 @@
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { RING, FLOOR_Y, WALL_X, GRID_CENTER } from './layout.js'
+import { KEEP, KEEP_GLSL } from './look.js'
 
 const REVEAL_S = 1.4
+const QUIET_ARC = 0.18, QUIET_GAIN = 0.45 // limits (moments.js): the arc length and gain the ring settles to
 const smooth = (t) => t * t * (3 - 2 * t)
 const easeInOut2 = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2)
 const WALL = 0x454d52
@@ -48,13 +50,14 @@ void main(){
 const ringFrag = /* glsl */ `
 uniform float uProg; uniform vec3 uColor; uniform vec3 uDimColor; uniform float uDim; uniform float uBright; uniform float uHead; uniform float uGain;
 varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+${KEEP_GLSL}
 void main(){
   float f = fract(0.25 - vUv.x);          // 0 at 12 o'clock, grows clockwise
   float lit = (1.0 - smoothstep(uProg - 0.004, uProg + 0.004, f)) * step(0.002, uProg);
   float head = exp(-pow((f - uProg) * 34.0, 2.0)) * step(0.002, uProg) * step(uProg, 0.998);
   float core = pow(clamp(dot(normalize(vN), normalize(vV)), 0.0, 1.0), 0.55);
   vec3 base = mix(uDimColor * uDim, uColor * uBright, lit) + uColor * head * uHead;
-  vec3 c = base * (0.55 + 0.75 * core) * uGain;
+  vec3 c = base * (0.55 + 0.75 * core) * uGain * keepOut(); // dims where it sits behind the page's text
   gl_FragColor = vec4(c, 1.0);
 }`
 
@@ -63,6 +66,7 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
   scene.fog = new THREE.FogExp2(WALL2, 0.1)
 
   const cyc = buildCyclorama()
+  cyc.userData.noAO = true // far behind everything: nothing to occlude, and it would fill the AO pass's whole screen
   scene.add(cyc)
 
   // image-based reflections, kept quiet
@@ -77,7 +81,7 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
     vertexShader: ringVert, fragmentShader: ringFrag,
     uniforms: {
       uProg: { value: 0 }, uColor: { value: new THREE.Color(1.0, 0.85, 0.6) }, uDim: { value: 1.35 }, uDimColor: { value: new THREE.Color(1.0, 0.5, 0.2) },
-      uBright: { value: 4.4 }, uHead: { value: 7 }, uGain: { value: 0 },
+      uBright: { value: 4.4 }, uHead: { value: 7 }, uGain: { value: 0 }, ...KEEP,
     },
     toneMapped: false,
   })
@@ -89,8 +93,9 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
     vertexShader: ringVert,
     fragmentShader: /* glsl */ `
       uniform vec3 uCol; uniform float uI; varying vec2 vUv; varying vec3 vN; varying vec3 vV;
-      void main(){ float f = pow(clamp(dot(normalize(vN), normalize(vV)), 0.0, 1.0), 2.6); gl_FragColor = vec4(uCol * f * uI, 1.0); }`,
-    uniforms: { uCol: { value: new THREE.Color(1.0, 0.52, 0.2) }, uI: { value: 0 } },
+      ${KEEP_GLSL}
+      void main(){ float f = pow(clamp(dot(normalize(vN), normalize(vV)), 0.0, 1.0), 2.6); gl_FragColor = vec4(uCol * f * uI * keepOut(), 1.0); }`,
+    uniforms: { uCol: { value: new THREE.Color(1.0, 0.52, 0.2) }, uI: { value: 0 }, ...KEEP },
     transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
   })
   const halo = new THREE.Mesh(new THREE.TorusGeometry(RING.radius, RING.tube * 3.4, 16, 200), haloMat)
@@ -106,6 +111,7 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
   housing.scale.z = 0.5
   ring.add(housing)
   ring.lookAt(GRID_CENTER.x, 0.1, GRID_CENTER.z)
+  ring.traverse((o) => { o.userData.noAO = true })
   scene.add(ring)
   const stand = new THREE.Mesh(
     new THREE.CylinderGeometry(0.0075, 0.0075, RING.pos.y - RING.radius, 10),
@@ -161,12 +167,20 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
   amber.position.set(0.2225, 0.16, 0)
   scene.add(amber)
 
-  const ringState = { min: 0, target: 0, prog: null, gainBase: 0, revealed: false, reveal: null, flash: 0 }
+  // dim: B2 takes the ring down to 15 %; close: the closing sweep of the arc's last gap; cflash: the close's one flash
+  const ringState = { min: 0, target: 0, prog: null, gainBase: 0, revealed: false, reveal: null, flash: 0, dim: 1, close: 0, cflash: 0, quiet: 0, lvl: 1, lvlT: 1, amb: 0, t: 0 }
+  let introK = 1 // the intro (vfx.js) brings the room's light up with the arm: only the ring is lit at first
   function applyRing() {
-    const p = Math.max(ringState.prog ?? ringState.target, ringState.min)
+    let p = Math.max(ringState.prog ?? ringState.target, ringState.min)
+    p = Math.min(p, 1 - (1 - QUIET_ARC) * ringState.quiet) // limits: a short, low arc whatever the scroll progress
+    p += (1 - p) * ringState.close
     mat.uniforms.uProg.value = Math.max(0.03, p) // a sliver is always lit so the arc reads at 0%
-    mat.uniforms.uGain.value = ringState.gainBase * (1 + ringState.flash)
-    haloMat.uniforms.uI.value = 0.42 * ringState.gainBase * (1 + ringState.flash)
+    const lv = ringState.lvl // round 6 (flight): eased ring level, hot only when the ring is the subject (1 = as before)
+    // round 7 (flight only, setAmbient): a slow faint breath in the ring when it is the subject (7.5 s, +-5 %, scaled by lvl^2)
+    const br = ringState.amb ? 1 + 0.05 * lv * lv * Math.sin(ringState.t * 0.8378) : 1
+    const g = ringState.gainBase * (1 + ringState.flash + ringState.cflash) * ringState.dim * (1 - (1 - QUIET_GAIN) * ringState.quiet) * (0.2 + 0.8 * lv * lv) * br
+    mat.uniforms.uGain.value = g
+    haloMat.uniforms.uI.value = 0.42 * g
   }
 
   const dimTint = new THREE.Color()
@@ -210,7 +224,7 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
       envHolder.tex = tex
       pmrem.dispose()
     },
-    /** Floor for the lit arc (0..1); the limits chapter lights the whole ring as the closing chord. */
+    /** Floor for the lit arc (0..1). (Stage B moved the full-ring chord from limits to the close, see moments.js.) */
     setRingMin(k) { if (k !== ringState.min) { ringState.min = k; if (!ringState.reveal) applyRing() } },
     setRingProgress(p) { ringState.target = THREE.MathUtils.clamp(Number(p) || 0, 0, 1); if (!ringState.reveal) applyRing() },
     /** Ignite the ring: progress sweeps 0 -> 1 -> current with a gain pulse. */
@@ -221,9 +235,32 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
       ringState.reveal = { t: 0 }
     },
     get revealed() { return ringState.revealed },
+    /** 0..1: how far the intro has brought the room light up (1 = normal). */
+    setIntroLight(k) { introK = k },
+    /** Test hook: put the ring out and ignite it again (intro capture). */
+    replay() { ringState.revealed = false; ringState.gainBase = 0; ringState.reveal = null; applyRing(); this.reveal() },
+    /** Current ring brightness multiplier (0 before ignition, pulses during it). */
+    get igniting() { return !!ringState.reveal },
+    get ringGain() { return ringState.gainBase * (1 + ringState.flash) },
+    /** Stage B (moments.js): ring gain multiplier (B2 peak), closing sweep 0..1 of the arc's last gap, and the close's flash. */
+    setRingDim(k) { if (k !== ringState.dim) { ringState.dim = k; if (!ringState.reveal) applyRing() } },
+    /** limits, the quietest chapter: 0..1 eases the arc down to a short low sliver (the full arc belongs to the close). */
+    setRingQuiet(k) { if (k !== ringState.quiet) { ringState.quiet = k; if (!ringState.reveal) applyRing() } },
+    setRingClose(k, flash) { if (k !== ringState.close || flash !== ringState.cflash) { ringState.close = k; ringState.cflash = flash; if (!ringState.reveal) applyRing() } },
     /** Brief overdrive (used by snapshot). 0..1 envelope handled by the caller. */
     setFlash(k) { ringState.flash = k; applyRing() },
+    /** Round 6 (flight): 0..1 target ring level (emission + halo, so the bloom follows), eased ~0.4 s; 1 = today's look. */
+    setRingLevel(k) { ringState.lvlT = THREE.MathUtils.clamp(Number(k), 0, 1) },
+    get ringLevel() { return ringState.lvl },
+    /** Round 7 (flight): the ring's slow ambient breath on (the default page never calls it). */
+    setAmbient(on) { ringState.amb = on ? 1 : 0 },
     updateRing(dt) {
+      if (ringState.amb) { ringState.t += dt; if (!ringState.reveal) applyRing() }
+      if (ringState.lvl !== ringState.lvlT) { // critically damped-ish exponential ease, snapped at the end (no endless tail)
+        ringState.lvl += (ringState.lvlT - ringState.lvl) * (1 - Math.exp(-dt * 5))
+        if (Math.abs(ringState.lvl - ringState.lvlT) < 0.002) ringState.lvl = ringState.lvlT
+        if (!ringState.reveal) applyRing()
+      }
       const r = ringState.reveal
       if (!r) return
       r.t += dt
@@ -237,11 +274,12 @@ export function createStudio(scene, { shadowSize = 2048 } = {}) {
     },
     /** dim: 0..1 multiplier for scene lights (the "test" chapter). */
     setLightScale(s, amberI, kickMul = 1) {
-      key.intensity = baseIntensity.key * s * themeK.key
+      const ik = introK * introK
+      key.intensity = baseIntensity.key * s * themeK.key * ik
       wash.intensity = baseIntensity.wash * s * themeK.wash
-      fill.intensity = baseIntensity.fill * s * themeK.fill
-      kick.intensity = baseIntensity.kick * s * kickMul * themeK.key
-      rim.intensity = baseIntensity.rim * s * themeK.rim
+      fill.intensity = baseIntensity.fill * s * themeK.fill * (0.35 + 0.65 * introK)
+      kick.intensity = baseIntensity.kick * s * kickMul * themeK.key * ik
+      rim.intensity = baseIntensity.rim * s * themeK.rim * (0.2 + 0.8 * introK)
       amber.intensity = amberI
     },
     dispose() {

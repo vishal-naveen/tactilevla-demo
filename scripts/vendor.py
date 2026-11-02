@@ -71,6 +71,10 @@ def main() -> None:
         shutil.rmtree(VENDOR)
     n = vendor_modules([THREE + "build/three.module.min.js"], THREE, VENDOR / "three")  # minified: ~100 KB less over the wire
     n += vendor_modules(addon_entries(), THREE, VENDOR / "three")
+    for f in ("basis_transcoder.js", "basis_transcoder.wasm"):  # KTX2Loader's transcoder (loaded by URL, not imported)
+        out = VENDOR / "three" / "examples/jsm/libs/basis" / f
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(fetch(THREE + "examples/jsm/libs/basis/" + f))
     n += vendor_modules([GSAP + "index.js", GSAP + "ScrollTrigger.js"], GSAP, VENDOR / "gsap")
     n += vendor_modules([LENIS_BASE + "dist/lenis.mjs"], LENIS_BASE + "dist/", VENDOR / "lenis")
     vendor_font(VENDOR / "fonts")

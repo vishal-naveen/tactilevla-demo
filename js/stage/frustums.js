@@ -1,5 +1,6 @@
 // "Sees" chapter: overhead camera + wrist camera frustums as glowing wireframes, and the occlusion wedge.
 import * as THREE from 'three'
+import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js'
 import { GRID_CENTER } from './layout.js'
 import { PAL, mixL, isLightPal } from './palette.js'
 
@@ -7,6 +8,26 @@ const OVERHEAD = { pos: new THREE.Vector3(GRID_CENTER.x, 0.5, 0.05), halfW: 0.3,
 const PALE = new THREE.Color(0x8ff0d6)
 const YEL = new THREE.Color(0xf4c430)
 const RED = new THREE.Color(0xf08a24)
+const LIGHT = new THREE.Color(1.0, 0.9, 0.76) // round 11 (flight): warm projector light
+
+// Flight only (round 6; js/flight/intro.js calls setFrustumFrames before createStage, so the default page builds none of it):
+// a REAL frame from each camera on its frustum's image plane, as camera-frustum views in robotics tools show them, with a
+// small label saying what it is. One ShaderMaterial source for both planes (one program, compiled at load with the rest);
+// the frames load after the stage and only swap a sampler uniform.
+let FRAMES = null
+/** @param {{ overhead: string, wrist: string, labels: { overhead: string, wrist: string } } | null} cfg */
+export function setFrustumFrames(cfg) { FRAMES = cfg }
+const FRAME_FRAG = /* glsl */ `
+uniform sampler2D map; uniform float uA; uniform float uGain; uniform vec3 uRim; varying vec2 vUv;
+void main(){
+  vec3 c = texture2D(map, vUv).rgb * uGain;
+  vec2 e = min(vUv, 1.0 - vUv);
+  vec2 px = fwidth(vUv);
+  float rim = 1.0 - min(smoothstep(px.x * 0.6, px.x * 1.6, e.x), smoothstep(px.y * 0.6, px.y * 1.6, e.y)); // ~1 px border
+  gl_FragColor = vec4(mix(c, uRim, rim), uA);
+}`
+const PLACEHOLDER = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1)
+PLACEHOLDER.needsUpdate = true
 
 /** Apex and footprint corners of the overhead camera (for framing). */
 export function overheadCorners() {
@@ -48,7 +69,18 @@ function volume(apex, corners, color, gain, side = THREE.BackSide) {
   return new THREE.Mesh(g, m)
 }
 
-export function createFrustums(scene, rig) {
+// Stage B: what the overhead camera sees, as light on the table (a soft-edged 4:3 throw, like a projector), not only lines
+const FOOT_FRAG = /* glsl */ `
+uniform vec3 uColor; uniform float uA; varying vec2 vUv;
+void main(){
+  vec2 e = min(vUv, 1.0 - vUv);
+  float m = smoothstep(0.0, 0.05, e.x) * smoothstep(0.0, 0.05, e.y);
+  float v = 0.75 + 0.25 * (1.0 - smoothstep(0.1, 0.75, length(vUv - 0.5)));
+  gl_FragColor = vec4(uColor * (m * v * uA), 1.0);
+}`
+
+export function createFrustums(scene, rig, { footprint = true } = {}) {
+  const SOFT = !!FRAMES // round 11 (flight only): the teal pyramid becomes a faint warm light volume (default page unchanged)
   const group = new THREE.Group()
   group.visible = false
   scene.add(group)
@@ -67,6 +99,16 @@ export function createFrustums(scene, rig) {
   ]
   const ohLines = add(lines(frustumSegments(A, corners), PALE, 3.0))
   const ohVol = add(volume(A, corners, PALE, 0.07))
+  const footMat = new THREE.ShaderMaterial({
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: FOOT_FRAG, uniforms: { uColor: { value: PALE.clone() }, uA: { value: 0 } },
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  })
+  const foot = new THREE.Mesh(new THREE.PlaneGeometry(OVERHEAD.halfH * 2, OVERHEAD.halfW * 2).rotateX(-Math.PI / 2), footMat)
+  foot.position.set(A.x, 0.0006, A.z)
+  foot.renderOrder = 1
+  foot.userData.noAO = true
+  group.add(foot)
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(0.075, 0.04, 0.05),
     new THREE.MeshStandardMaterial({ color: 0x1b1d1f, roughness: 0.4, metalness: 0.3 }),
@@ -101,6 +143,58 @@ export function createFrustums(scene, rig) {
   const cam = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.01, 0.012), new THREE.MeshBasicMaterial({ color: YEL.clone().multiplyScalar(2), transparent: true, opacity: 0, toneMapped: false }))
   wrist.add(cam)
   mats.push(cam.material)
+
+  // real frames on the image planes (flight only)
+  const frames = []
+  if (FRAMES) {
+    const loader = new THREE.TextureLoader()
+    const plane = (w, h, url, rim, text) => {
+      const m = new THREE.ShaderMaterial({
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: FRAME_FRAG,
+        uniforms: { map: { value: PLACEHOLDER }, uA: { value: 0 }, uGain: { value: 1.55 }, uRim: { value: LIGHT.clone().multiplyScalar(1.3) } }, // round 11: brighter frame, warm hairline rim
+        transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+      })
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m)
+      mesh.userData.noAO = true
+      mesh.renderOrder = 2
+      loader.load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; m.uniforms.map.value = t })
+      const el = document.createElement('div')
+      el.className = 'stage-label stage-label--tag'
+      el.textContent = text
+      el.style.opacity = '0'
+      const label = new CSS2DObject(el)
+      label.center.set(0.5, -0.35)
+      // seen edge-on the picture is a sliver: fade it and its label out (measured per draw; the mesh stays drawn at uA 0)
+      const f = { m, el, face: 0 }
+      const _p = new THREE.Vector3(), _n = new THREE.Vector3()
+      mesh.onBeforeRender = (r, sc, cam) => {
+        mesh.getWorldPosition(_p)
+        _n.set(0, 0, 1).transformDirection(mesh.matrixWorld)
+        const c = Math.abs(_n.dot(_p.sub(cam.position).normalize()))
+        f.face = Math.min(1, Math.max(0, (c - 0.22) / 0.25))
+      }
+      frames.push(f)
+      return { mesh, label }
+    }
+    // overhead: the frustum's cross-section 17 cm under the lens (4:3 like the footprint); image up = -x, right = -z
+    const d = 0.17, s = d / A.y
+    const oh = plane(OVERHEAD.halfW * 2 * s, OVERHEAD.halfH * 2 * s, FRAMES.overhead, PALE, FRAMES.labels.overhead)
+    oh.mesh.geometry.rotateX(-Math.PI / 2).rotateY(Math.PI / 2)
+    oh.mesh.position.set(A.x, A.y - d, A.z)
+    oh.label.position.set(A.x + OVERHEAD.halfH * s, A.y - d, A.z) // under its near edge (+x, the camera side of the set)
+    group.add(oh.mesh, oh.label)
+    // wrist: 5.5 cm along its axis, facing back toward the lens
+    const dw = 0.055, sw = dw / far
+    const wr = plane(hw * 2 * sw, hh * 2 * sw, FRAMES.wrist, YEL, FRAMES.labels.wrist)
+    wr.mesh.position.set(0, 0, dw)
+    // at the grasp the noodle fills the space in front of the lens (that is what the frame shows), so the plane would sit
+    // inside it: drawn over the set, as the camera's picture
+    wr.mesh.material.depthTest = false
+    wr.mesh.renderOrder = 4
+    wr.label.position.set(0, -hh * sw, dw) // under the picture: above it, it crowded the stage's WRIST CAMERA pin
+    wrist.add(wr.mesh, wr.label)
+  }
 
   // occlusion wedge: shadow of a box around the gripper, cast from the overhead camera onto the table
   const wedgeGeo = new THREE.BufferGeometry()
@@ -141,14 +235,27 @@ export function createFrustums(scene, rig) {
   // theme: recolour lines/volumes/markers from the live palette (glow gains in a dark studio, plain ink in a light one)
   let painted = -1
   const tmp = new THREE.Color()
-  function paintVolume(mesh, color, gain) {
+  function paintVolume(mesh, color, gain, apexGain = 0) {
     const col = mesh.geometry.attributes.color
     tmp.copy(color).multiplyScalar(gain)
     for (let i = 0; i < col.count; i++) if (i % 3 !== 0) col.setXYZ(i, tmp.r, tmp.g, tmp.b) // apex vertex stays black
+    if (apexGain) { tmp.copy(color).multiplyScalar(apexGain); for (let i = 0; i < col.count; i += 3) col.setXYZ(i, tmp.r, tmp.g, tmp.b) } // round 11: light leaves the lens
     col.needsUpdate = true
   }
   function repaint() {
     painted = PAL.stamp
+    if (SOFT) { // round 11 (flight): a faint warm light volume, brightest at the lens, hairline edges; the real frame is the subject
+      ohLines.material.color.copy(LIGHT).multiplyScalar(0.8)
+      wl.material.color.copy(LIGHT).multiplyScalar(0.8)
+      paintVolume(ohVol, LIGHT, 0.0045, 0.035) // round 11b: halved, the arm and the frames lead
+      paintVolume(wv, LIGHT, 0.01, 0.06)
+      lens.material.color.copy(LIGHT).multiplyScalar(1.6)
+      footMat.uniforms.uColor.value.copy(LIGHT)
+      cam.material.color.copy(LIGHT).multiplyScalar(1.4)
+      wedgeMat.color.copy(PAL.held).multiplyScalar(mixL(1.6, 1.0))
+      wedgeEdges.material.color.copy(PAL.held).multiplyScalar(mixL(2.6, 1.0))
+      return
+    }
     ohLines.material.color.copy(PAL.frustum).multiplyScalar(mixL(3.0, 1.0))
     wl.material.color.copy(PAL.accent).multiplyScalar(mixL(3.2, 1.0))
     paintVolume(ohVol, PAL.frustum, 0.07)
@@ -173,12 +280,23 @@ export function createFrustums(scene, rig) {
         wedgeMat.needsUpdate = true
         ohVol.visible = wv.visible = !light // translucent glow volumes only read on dark
       }
-      for (const m of mats) m.opacity = weight * (m === wedgeMat ? mixL(0.17, 0.3) : 1)
+      for (const m of mats) m.opacity = weight * (m === wedgeMat ? mixL(0.17, 0.3) : SOFT && (m === ohLines.material || m === wl.material) ? 0.18 : 1)
       lens.material.opacity = weight
+      footMat.uniforms.uA.value = footprint && !light ? (SOFT ? 0.018 : 0.12) * weight : 0
+      foot.visible = footMat.uniforms.uA.value > 0.002
       wedgeEdges.material.opacity = weight * 0.9
+      // the frames arrive last, once the frustum is nearly drawn
+      const fa = Math.max(0, Math.min(1, (weight - 0.6) / 0.4))
+      for (const f of frames) {
+        const a = fa * fa * (3 - 2 * fa) * f.face * f.face * (3 - 2 * f.face)
+        f.m.uniforms.uA.value = a
+        const o = (a * 0.9).toFixed(2)
+        if (f.el.style.opacity !== o) f.el.style.opacity = o
+      }
       updateWedge(tcp)
     },
     dispose() {
+      for (const f of frames) { if (f.m.uniforms.map.value !== PLACEHOLDER) f.m.uniforms.map.value.dispose(); f.el.remove() }
       group.traverse((o) => { o.geometry?.dispose?.(); o.material?.dispose?.() })
       wrist.removeFromParent()
     },

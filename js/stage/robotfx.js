@@ -76,8 +76,23 @@ export function createRobotFx(rig) {
     wrap.append(leader, el)
     const obj = new CSS2DObject(wrap)
     joint.add(obj)
-    return { wrap, el, leader, obj, joint, last: '' }
+    return { wrap, el, leader, obj, joint, last: '', text: JOINT_LABELS[i], dec: -1, armed: true }
   })
+  // Stage B: a chip's name types in (decodes left to right, ~0.3 s) once it has settled; re-armed when it hides again
+  const GLYPHS = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789/_'
+  const DEC_S = 0.3
+  function decode(l, a) {
+    if (!api.typing) { if (l.dec >= 0) { l.dec = -1; l.el.textContent = l.text } return }
+    if (a < 0.05) { l.armed = true; if (l.dec >= 0) { l.dec = -1; l.el.textContent = l.text } return }
+    if (l.armed && a > 0.95) { l.armed = false; l.dec = performance.now() }
+    if (l.dec < 0) return
+    const u = (performance.now() - l.dec) / 1000 / DEC_S
+    if (u >= 1) { l.dec = -1; l.el.textContent = l.text; return }
+    const n = Math.floor(u * l.text.length)
+    let out = l.text.slice(0, n)
+    for (let k = n; k < l.text.length; k++) out += l.text[k] === ' ' ? ' ' : GLYPHS[(Math.random() * GLYPHS.length) | 0]
+    l.el.textContent = out
+  }
   const LABEL_R = 72
   const _wp = new THREE.Vector3()
   const cpx = []
@@ -166,6 +181,7 @@ export function createRobotFx(rig) {
       if (!flip && cpx[i * 2] + ox + CHIP > vw - 8) { flip = true; ox = -Math.abs(ox) }
       else if (flip && cpx[i * 2] + ox - CHIP < 8) { flip = false; ox = Math.abs(ox) }
       const ang = Math.atan2(oy, ox)
+      decode(l, a)
       const key = `${ox},${oy},${Math.round(a * 50)}`
       if (key === l.last) continue
       l.last = key
@@ -190,9 +206,11 @@ export function createRobotFx(rig) {
     }
   }
 
-  return {
+  const api = {
     applyExplode, placeLabels, applyHeat,
+    typing: false, // Stage B typed labels (stage.js: off under reduced motion and ?off=type)
     get exploded() { return exploded },
     dispose() { labels.forEach((l) => { l.obj.removeFromParent(); l.wrap.remove() }) },
   }
+  return api
 }

@@ -12,7 +12,7 @@ export function createDollies(camRig) {
   return {
     get lean() { return st.lean },
     /** @param running whether the arm is mid-task in the sandbox; tcpObj the gripper frame */
-    update(dt, { chapter, progress, running, tcpObj, reduced }) {
+    update(dt, { chapter, progress, running, tcpObj, reduced, b2Peak = false }) {
       const k = reduced ? 1 : 1 - Math.exp(-dt * 4.5) // gentler than a snap: chapter changes must not tug the camera
       let scale = 1, fov = 0, look = 0
       if (chapter === 'arm') scale = 1 - 0.08 * smooth(0, 1, progress.arm ?? 0) // slow push-in across the pin
@@ -20,6 +20,7 @@ export function createDollies(camRig) {
         const s = smooth(0.75, 1, progress.data ?? 0)
         fov = -5 * s * (camRig.aspect < 1 ? 0.4 : 1); look = s * (camRig.aspect < 1 ? 0.5 : 1)
       }
+      if (chapter === 'test' && b2Peak && camRig.aspect >= 1) { scale = 0.86; fov = -3; look = 0.55 } // Stage B: in on B2 (phones keep the shot)
       st.scale += (scale - st.scale) * k
       st.fov += (fov - st.fov) * k
       st.look += (look - st.look) * k
@@ -31,7 +32,7 @@ export function createDollies(camRig) {
       // the C column off the right edge; keep the framing still there.
       const still = isIpadLandscape(camRig.width || 0, camRig.height || 0) ? 0 : 1
       m.fov = st.fov - 3 * st.lean * still
-      if (st.look > 0.001) { m.lookTo.copy(B2); m.lookK = st.look } // data: centre B2
+      if (st.look > 0.001) { m.lookTo.copy(B2); m.lookK = st.look } // data / test: centre B2
       else if (st.lean > 0.001) { m.lookTo.copy(tcp); m.lookK = 0.3 * st.lean * still } // sandbox: lean toward the gripper
       else m.lookK = 0
     },

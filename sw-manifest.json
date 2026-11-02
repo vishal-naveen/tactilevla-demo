@@ -1,6 +1,126 @@
 {
  "files": [
   {
+   "hash": "5469325c94e0d568bfba",
+   "path": "assets/audio/bank_mono.m4a",
+   "size": 646049,
+   "tier": "media"
+  },
+  {
+   "hash": "bac4ba7ad5449fc2e46a",
+   "path": "assets/audio/bank_mono.webm",
+   "size": 467296,
+   "tier": "media"
+  },
+  {
+   "hash": "9b7abb0d17ba51c85650",
+   "path": "assets/audio/bank_st.m4a",
+   "size": 163938,
+   "tier": "media"
+  },
+  {
+   "hash": "8416d2a2586166532689",
+   "path": "assets/audio/bank_st.webm",
+   "size": 178189,
+   "tier": "media"
+  },
+  {
+   "hash": "fafb67b75a38a7a097d3",
+   "path": "assets/env/daylight.hdr",
+   "size": 247097,
+   "tier": "media"
+  },
+  {
+   "hash": "bd406ee8768dd8b6e646",
+   "path": "assets/env/ember.hdr",
+   "size": 514751,
+   "tier": "media"
+  },
+  {
+   "hash": "a52222b3f5328be6f7b2",
+   "path": "assets/env/nocturne.hdr",
+   "size": 605370,
+   "tier": "media"
+  },
+  {
+   "hash": "0562b28a3c99162e3711",
+   "path": "assets/env/studio.hdr",
+   "size": 482409,
+   "tier": "media"
+  },
+  {
+   "hash": "c4e50369ea11789dffb6",
+   "path": "assets/flight/cams_overhead.webp",
+   "size": 6096,
+   "tier": "media"
+  },
+  {
+   "hash": "e2f196e4074879c235d9",
+   "path": "assets/flight/cams_wrist.webp",
+   "size": 4724,
+   "tier": "media"
+  },
+  {
+   "hash": "590c948fccf1c4b4641d",
+   "path": "assets/flight/island_light.ktx2",
+   "size": 1350902,
+   "tier": "media"
+  },
+  {
+   "hash": "b4f0b2a77de76587917c",
+   "path": "assets/flight/island_nrm.ktx2",
+   "size": 6093333,
+   "tier": "media"
+  },
+  {
+   "hash": "373c1faa47847f5fb019",
+   "path": "assets/flight/island_nrm_2k.ktx2",
+   "size": 1909995,
+   "tier": "media"
+  },
+  {
+   "hash": "840ea9c0016af0c3a273",
+   "path": "assets/flight/servo_nrm.ktx2",
+   "size": 744751,
+   "tier": "media"
+  },
+  {
+   "hash": "aab5125d5146f610dd4f",
+   "path": "assets/flight/world_far.ktx2",
+   "size": 1139068,
+   "tier": "media"
+  },
+  {
+   "hash": "8056efa91306c87d6773",
+   "path": "assets/flight/world_far_p1.ktx2",
+   "size": 1214420,
+   "tier": "media"
+  },
+  {
+   "hash": "e8dcdf29ec7363335e72",
+   "path": "assets/flight/world_servo_nrm.ktx2",
+   "size": 744299,
+   "tier": "media"
+  },
+  {
+   "hash": "619c3e1c22cd86ec2eca",
+   "path": "assets/props/cup_ao.bin",
+   "size": 5957,
+   "tier": "shell"
+  },
+  {
+   "hash": "b731abe855f3db242c53",
+   "path": "assets/props/table_ao.png",
+   "size": 20968,
+   "tier": "shell"
+  },
+  {
+   "hash": "9bd0c42d6a21d55f2d36",
+   "path": "assets/so101/ao.bin",
+   "size": 173631,
+   "tier": "shell"
+  },
+  {
    "hash": "851ff87ff5cd96704562",
    "path": "assets/so101/meshes.bin.gz",
    "size": 1003207,
@@ -37,6 +157,18 @@
    "tier": "shell"
   },
   {
+   "hash": "6f87918ada9d3f1ae546",
+   "path": "css/flight.css",
+   "size": 53372,
+   "tier": "shell"
+  },
+  {
+   "hash": "6b55d5de699e4d41a67d",
+   "path": "css/flight_content.css",
+   "size": 2742,
+   "tier": "shell"
+  },
+  {
    "hash": "60664433928a401aeebd",
    "path": "css/loader.css",
    "size": 1329,
@@ -49,9 +181,9 @@
    "tier": "shell"
   },
   {
-   "hash": "9bceef3d78ca8676b502",
+   "hash": "b09891424aff47daa534",
    "path": "css/stage-labels.css",
-   "size": 3534,
+   "size": 3851,
    "tier": "shell"
   },
   {
@@ -85,6 +217,12 @@
    "tier": "shell"
   },
   {
+   "hash": "966a81d11059be055382",
+   "path": "document.html",
+   "size": 27451,
+   "tier": "shell"
+  },
+  {
    "hash": "311b162688a90048a169",
    "path": "icons/apple-touch-icon.png",
    "size": 40477,
@@ -109,9 +247,123 @@
    "tier": "shell"
   },
   {
-   "hash": "95d8199e96135fa6200b",
+   "hash": "57d8adb102b7abac26fe",
    "path": "index.html",
-   "size": 27628,
+   "size": 30240,
+   "tier": "shell"
+  },
+  {
+   "hash": "f2282a281380a5fc5e61",
+   "path": "js/flight/boot.js",
+   "size": 3646,
+   "tier": "shell"
+  },
+  {
+   "hash": "0506e26574696970a036",
+   "path": "js/flight/copy.js",
+   "size": 8891,
+   "tier": "shell"
+  },
+  {
+   "hash": "79977c18ed087b7f507a",
+   "path": "js/flight/director.js",
+   "size": 40274,
+   "tier": "shell"
+  },
+  {
+   "hash": "7eb267d6e27efbe9387e",
+   "path": "js/flight/hud.js",
+   "size": 13682,
+   "tier": "shell"
+  },
+  {
+   "hash": "ad584e8817a8e8ad5538",
+   "path": "js/flight/intro.js",
+   "size": 23143,
+   "tier": "shell"
+  },
+  {
+   "hash": "7b09f2f1b3b9ca8a69b8",
+   "path": "js/flight/nav.js",
+   "size": 66519,
+   "tier": "shell"
+  },
+  {
+   "hash": "999554df113d8fc300e9",
+   "path": "js/flight/pace.js",
+   "size": 11610,
+   "tier": "shell"
+  },
+  {
+   "hash": "24c88671f7e3e591a6cd",
+   "path": "js/flight/path.js",
+   "size": 17021,
+   "tier": "shell"
+  },
+  {
+   "hash": "50cda8d751d5dd54ad24",
+   "path": "js/flight/props.js",
+   "size": 4455,
+   "tier": "shell"
+  },
+  {
+   "hash": "dae9f51ba2873e4be5ba",
+   "path": "js/flight/props_runs.js",
+   "size": 9913,
+   "tier": "shell"
+  },
+  {
+   "hash": "c706fb0df73081683557",
+   "path": "js/flight/rec.js",
+   "size": 3837,
+   "tier": "shell"
+  },
+  {
+   "hash": "35dcdf55e47c14ca7fd3",
+   "path": "js/flight/scenes.js",
+   "size": 31976,
+   "tier": "shell"
+  },
+  {
+   "hash": "7d7e518c2ea443bfd9d3",
+   "path": "js/flight/scramble.js",
+   "size": 2955,
+   "tier": "shell"
+  },
+  {
+   "hash": "7422cd798569721207e6",
+   "path": "js/flight/sound.js",
+   "size": 25191,
+   "tier": "shell"
+  },
+  {
+   "hash": "b10811719a2f8a8f1e5b",
+   "path": "js/flight/surface.js",
+   "size": 13267,
+   "tier": "shell"
+  },
+  {
+   "hash": "ea5dbe41cc443df632e6",
+   "path": "js/flight/world.js",
+   "size": 30760,
+   "tier": "shell"
+  },
+  {
+   "hash": "58c7171533eecea7ace8",
+   "path": "js/flight/world_far.js",
+   "size": 5302,
+   "tier": "shell"
+  },
+  {
+   "hash": "7a99e0fb3527feac376d",
+   "path": "js/flight/world_motes.js",
+   "size": 3941,
+   "tier": "shell"
+  },
+  {
+   "hash": "dca3a6f06d83f72f61a1",
+   "path": "js/flight/world_terrain.js",
+   "size": 8661,
    "tier": "shell"
   },
   {
@@ -121,27 +373,33 @@
    "tier": "shell"
   },
   {
+   "hash": "9487392c15bcdbb390be",
+   "path": "js/stage/baked.js",
+   "size": 10030,
+   "tier": "shell"
+  },
+  {
    "hash": "05ce3a68ed3d1f149dd9",
    "path": "js/stage/blend.js",
    "size": 3910,
    "tier": "shell"
   },
   {
-   "hash": "f001696b4ac9476ee561",
+   "hash": "dc7b405e828f255fb386",
    "path": "js/stage/bloom.js",
-   "size": 7847,
+   "size": 8371,
    "tier": "shell"
   },
   {
-   "hash": "421663d396497db69757",
+   "hash": "d52a0dbf3e62d6651bd9",
    "path": "js/stage/dolly.js",
-   "size": 2275,
+   "size": 2444,
    "tier": "shell"
   },
   {
-   "hash": "976418f0e7724b5aba3d",
+   "hash": "b51f30927e2f335dab78",
    "path": "js/stage/episodes.js",
-   "size": 6797,
+   "size": 11208,
    "tier": "shell"
   },
   {
@@ -157,15 +415,15 @@
    "tier": "shell"
   },
   {
-   "hash": "4e94b2832053d356ad43",
+   "hash": "c180df1d819a945349cc",
    "path": "js/stage/frustums.js",
-   "size": 8433,
+   "size": 15457,
    "tier": "shell"
   },
   {
-   "hash": "f2f286a744680a83c395",
+   "hash": "4c21ef23de865990b699",
    "path": "js/stage/fx.js",
-   "size": 4721,
+   "size": 45810,
    "tier": "shell"
   },
   {
@@ -187,15 +445,15 @@
    "tier": "shell"
   },
   {
-   "hash": "5c89f24a9847cd8ee77b",
+   "hash": "8d3aad4e40512636d896",
    "path": "js/stage/grid.js",
-   "size": 10613,
+   "size": 15386,
    "tier": "shell"
   },
   {
-   "hash": "c3cb64c53e78d06aa8a4",
+   "hash": "129af98a9b1583d9d0b1",
    "path": "js/stage/ground.js",
-   "size": 4101,
+   "size": 4520,
    "tier": "shell"
   },
   {
@@ -217,15 +475,27 @@
    "tier": "shell"
   },
   {
+   "hash": "5c1ccb290d53877ca3ff",
+   "path": "js/stage/look.js",
+   "size": 6303,
+   "tier": "shell"
+  },
+  {
    "hash": "45f9179924500e780cd2",
    "path": "js/stage/meshpack.js",
    "size": 4503,
    "tier": "shell"
   },
   {
-   "hash": "15f40d707fc5d9741f2f",
+   "hash": "b1df9c10f34c325902c4",
    "path": "js/stage/modes.js",
-   "size": 2397,
+   "size": 2720,
+   "tier": "shell"
+  },
+  {
+   "hash": "f0ca74194a58134df1fe",
+   "path": "js/stage/moments.js",
+   "size": 8959,
    "tier": "shell"
   },
   {
@@ -301,15 +571,15 @@
    "tier": "shell"
   },
   {
-   "hash": "ef58dd76ffec5b0ed8a7",
+   "hash": "d4f96a9d2b5e258cad81",
    "path": "js/stage/robotfx.js",
-   "size": 8633,
+   "size": 9677,
    "tier": "shell"
   },
   {
-   "hash": "f25cb80de048fc2f6e68",
+   "hash": "2370e2a348199f06acdb",
    "path": "js/stage/shots.js",
-   "size": 11787,
+   "size": 12357,
    "tier": "shell"
   },
   {
@@ -325,15 +595,15 @@
    "tier": "shell"
   },
   {
-   "hash": "9f9b5b84393dae373f9a",
+   "hash": "b22dd5aef8103c2be5ae",
    "path": "js/stage/stage.js",
-   "size": 35289,
+   "size": 68465,
    "tier": "shell"
   },
   {
-   "hash": "5172ce145c1befcbe88b",
+   "hash": "b378de8813fd32d57768",
    "path": "js/stage/studio.js",
-   "size": 11094,
+   "size": 14519,
    "tier": "shell"
   },
   {
@@ -343,9 +613,9 @@
    "tier": "shell"
   },
   {
-   "hash": "7523f699ed1f1435755e",
+   "hash": "6241882463875833bc2a",
    "path": "js/stage/tasks.js",
-   "size": 19451,
+   "size": 26348,
    "tier": "shell"
   },
   {
@@ -364,6 +634,12 @@
    "hash": "e0f7b76102b00bbf6c45",
    "path": "js/stage/urdf.js",
    "size": 3550,
+   "tier": "shell"
+  },
+  {
+   "hash": "49e5fbee056069ba3d89",
+   "path": "js/stage/vfx.js",
+   "size": 24603,
    "tier": "shell"
   },
   {
@@ -457,9 +733,9 @@
    "tier": "shell"
   },
   {
-   "hash": "1570b2ceabf16520e559",
+   "hash": "621c7323a7b8bbba6cfc",
    "path": "js/ui/scroll.js",
-   "size": 12703,
+   "size": 13026,
    "tier": "shell"
   },
   {
@@ -469,9 +745,9 @@
    "tier": "shell"
   },
   {
-   "hash": "d20dadd17eba3f09a6f4",
+   "hash": "0e95f10873d6103bbadb",
    "path": "js/ui/stage-proxy.js",
-   "size": 3119,
+   "size": 3171,
    "tier": "shell"
   },
   {
@@ -787,6 +1063,30 @@
    "tier": "shell"
   },
   {
+   "hash": "8478b5b6d6b74e7d3082",
+   "path": "vendor/three/examples/jsm/libs/basis/basis_transcoder.js",
+   "size": 57529,
+   "tier": "shell"
+  },
+  {
+   "hash": "6cf17dc889352c42e9ac",
+   "path": "vendor/three/examples/jsm/libs/basis/basis_transcoder.wasm",
+   "size": 527333,
+   "tier": "shell"
+  },
+  {
+   "hash": "34a3a68f08db30a35380",
+   "path": "vendor/three/examples/jsm/libs/ktx-parse.module.js",
+   "size": 19440,
+   "tier": "shell"
+  },
+  {
+   "hash": "5cbf818e842628a4464e",
+   "path": "vendor/three/examples/jsm/libs/zstddec.module.js",
+   "size": 39754,
+   "tier": "shell"
+  },
+  {
    "hash": "4a58808a6e3a48f2a98e",
    "path": "vendor/three/examples/jsm/lines/LineMaterial.js",
    "size": 10986,
@@ -805,15 +1105,45 @@
    "tier": "shell"
   },
   {
+   "hash": "fbf80e9b0237ffe2e581",
+   "path": "vendor/three/examples/jsm/loaders/KTX2Loader.js",
+   "size": 27164,
+   "tier": "shell"
+  },
+  {
+   "hash": "f0e87d0008d9484d3135",
+   "path": "vendor/three/examples/jsm/loaders/RGBELoader.js",
+   "size": 11377,
+   "tier": "shell"
+  },
+  {
    "hash": "a0a83c88b269c94e25b6",
    "path": "vendor/three/examples/jsm/loaders/STLLoader.js",
    "size": 10043,
    "tier": "shell"
   },
   {
+   "hash": "56981604d66cccc26558",
+   "path": "vendor/three/examples/jsm/math/ColorSpaces.js",
+   "size": 2462,
+   "tier": "shell"
+  },
+  {
+   "hash": "9b8d541b77b0ddc79afa",
+   "path": "vendor/three/examples/jsm/math/SimplexNoise.js",
+   "size": 14351,
+   "tier": "shell"
+  },
+  {
    "hash": "d234e578618fa816955e",
    "path": "vendor/three/examples/jsm/postprocessing/EffectComposer.js",
    "size": 4651,
+   "tier": "shell"
+  },
+  {
+   "hash": "980b036767c439cf2aad",
+   "path": "vendor/three/examples/jsm/postprocessing/GTAOPass.js",
+   "size": 16582,
    "tier": "shell"
   },
   {
@@ -871,15 +1201,33 @@
    "tier": "shell"
   },
   {
+   "hash": "e1f5dd89bca4ee679a4a",
+   "path": "vendor/three/examples/jsm/shaders/GTAOShader.js",
+   "size": 12990,
+   "tier": "shell"
+  },
+  {
    "hash": "4944cecd49c0d4d1520a",
    "path": "vendor/three/examples/jsm/shaders/OutputShader.js",
    "size": 1490,
    "tier": "shell"
   },
   {
+   "hash": "3dab419b23529f8fd59e",
+   "path": "vendor/three/examples/jsm/shaders/PoissonDenoiseShader.js",
+   "size": 6614,
+   "tier": "shell"
+  },
+  {
    "hash": "c25b7930e570e9ec5617",
    "path": "vendor/three/examples/jsm/utils/BufferGeometryUtils.js",
    "size": 31768,
+   "tier": "shell"
+  },
+  {
+   "hash": "94ff7b608caf3b827ffa",
+   "path": "vendor/three/examples/jsm/utils/WorkerPool.js",
+   "size": 1712,
    "tier": "shell"
   }
  ],

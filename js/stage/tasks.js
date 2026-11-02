@@ -245,6 +245,11 @@ export class ArmController {
     this.snap = false
     this.qv = new Array(6).fill(0)
     this._q = new Array(6).fill(0)
+    // round 14 (flight only; null = the default page's behaviour, unchanged): { v, a, grip } in rad/s, rad/s^2. Every
+    // task (loop, explicit, scrubbed) is then TIME-SCALED so no joint passes v or a (the pose stays exactly on the plan,
+    // so the noodle never pops), and a job waits for the arm to glide to its start pose with continuous velocity.
+    this.calm = null
+    this.sv = 0 // calm: displayed task-time velocity (task s per s, signed)
     this._apply()
   }
 
@@ -297,6 +302,7 @@ export class ArmController {
     if (!this.cur) { // bring the finished task back on stage, starting from its end
       this.cur = { plan, resolve: () => {}, auto: false, blend: this.last.blend, blendDur: this.last.blendDur ?? 1.1 }
       this.t = plan.duration
+      if (this.calm) { this.cur.prof = this._profile(plan, this.cur.blend, this.cur.blendDur); this.sv = 0 }
     }
     this.paused = true
     this.scrubTo = THREE.MathUtils.clamp(u, 0, 1) * plan.duration
@@ -319,14 +325,20 @@ export class ArmController {
     if (!this.cur && this.queue.length) {
       const job = this.queue[0]
       // A loop task begins from its home pose: glide there first (speed-capped) rather than blending a big offset into it.
-      if (job.auto && !this.snap && !this._settledAt(job.plan.knots[0].q)) {
+      // round 14 (calm): every job does, so a task never starts with the arm still moving (velocity stays continuous);
+      // its noodle is laid out once while the arm glides (the previous one shrinks away where it is: cup, gripper, air)
+      if ((job.auto || this.calm) && !this.snap && !this._settledAt(job.plan.knots[0].q)) {
+        if (this.calm && !job.preDone) { job.preDone = true; job.pre = this._preSpawn(job.plan) }
         this._glide(job.plan.knots[0].q, dt)
         this._apply()
         return
       }
       this._start(this.queue.shift())
     }
-    if (this.cur) {
+    if (this.cur && this.calm) { // round 14: time-scaled playback / scrub (see _calmStep)
+      if (this._calmStep(dt, speed)) return
+      this._pose(this.cur.plan, this.t, this.scrubTo === null && !this.paused, dt)
+    } else if (this.cur) {
       const plan = this.cur.plan
       if (this.scrubTo !== null) { // chase the scrub target (fast critically-damped glide, exact once close)
         const d = this.scrubTo - this.t
@@ -350,7 +362,8 @@ export class ArmController {
   }
 
   _settledAt(q) {
-    for (let i = 0; i < 6; i++) if (Math.abs(this.q[i] - q[i]) > 0.03 || Math.abs(this.qv[i]) > 0.08) return false
+    const e = this.calm ? 0.004 : 0.03, ev = this.calm ? 0.012 : 0.08 // calm: the glide lands at rest, the task starts at rest
+    for (let i = 0; i < 6; i++) if (Math.abs(this.q[i] - q[i]) > e || Math.abs(this.qv[i]) > ev) return false
     return true
   }
 
@@ -375,7 +388,7 @@ export class ArmController {
       const e = w * w * (3 - 2 * w)
       for (let i = 0; i < 6; i++) this._q[i] += b[i] * e
     }
-    if (this.cur.auto && dt > 0) { // slew limit (loop tasks only: explicit / scrubbed tasks must stay exact)
+    if (this.cur.auto && dt > 0 && !this.calm) { // slew limit (loop tasks only: explicit / scrubbed tasks must stay exact)
       for (let i = 0; i < 6; i++) {
         const m = AUTO_SLEW[i] * dt, d = this._q[i] - this.q[i]
         if (d > m) this._q[i] = this.q[i] + m; else if (d < -m) this._q[i] = this.q[i] - m
@@ -385,7 +398,109 @@ export class ArmController {
       if (dt > 1e-4) this.qv[i] += ((this._q[i] - this.q[i]) / dt - this.qv[i]) * Math.min(1, dt * 30) // velocity estimate, for handing over
       this.q[i] = this._q[i]
     }
-    this.noodle.applyPlan(plan, t, playing)
+    this.noodle.applyPlan(plan, t, playing && !this.cur.pre) // a pre-spawned noodle has already grown in
+  }
+
+  /** The plan's pose at task time t (spline + the glide-in blend), without the slew limit. */
+  _poseAt(plan, b, bd, t, out) {
+    plan.spline(Math.min(Math.max(t, 0), plan.duration), out)
+    if (b) { const w = Math.max(0, 1 - t / bd), e = w * w * (3 - 2 * w); for (let i = 0; i < 6; i++) out[i] += b[i] * e }
+    return out
+  }
+
+  /**
+   * round 14 (calm): the task's rate profile. On a 1/60 s grid of task time: cap(s) = the largest playback rate that keeps
+   * every joint under calm.v (gripper calm.grip) and its path acceleration under calm.a (|q'| r <= v, |q''| r^2 <= a), and
+   * ra(s) = the rate change allowed there (|q'| dr/dt <= a). fwd / bwd = cap made reachable with braking at ra in each
+   * direction (phase plane: r_i^2 <= r_(i+1)^2 + 2 ra ds), so the playhead always slows BEFORE a fast stretch.
+   */
+  _profile(plan, b, bd) {
+    const C = this.calm, G = 1 / 60, n = Math.ceil(plan.duration / G) + 1
+    const P = new Float64Array(n * 6), tmp = new Array(6)
+    for (let k = 0; k < n; k++) { this._poseAt(plan, b, bd, k * G, tmp); for (let i = 0; i < 6; i++) P[k * 6 + i] = tmp[i] }
+    const cap = new Float64Array(n), ra = new Float64Array(n), fwd = new Float64Array(n), bwd = new Float64Array(n)
+    for (let k = 0; k < n; k++) {
+      const a = Math.max(0, k - 1), c = Math.min(n - 1, k + 1), h = (c - a) * G
+      let r = 4, qd = 1e-6
+      for (let i = 0; i < 6; i++) {
+        const v = i === 5 ? C.grip : i === 4 ? (C.roll ?? C.v) : C.v // wrist roll may have its own cap (it turns the jaw in place)
+        const d1 = Math.abs(P[c * 6 + i] - P[a * 6 + i]) / h
+        const d2 = c - a === 2 ? Math.abs(P[c * 6 + i] - 2 * P[k * 6 + i] + P[a * 6 + i]) / (G * G) : 0
+        if (d1 > 1e-6) r = Math.min(r, v / d1)
+        if (d2 > 1e-6) r = Math.min(r, Math.sqrt((i === 5 ? 2 : 1) * C.a / d2))
+        if (i < 5) qd = Math.max(qd, d1)
+      }
+      cap[k] = Math.max(0.02, r)
+      ra[k] = Math.min(3, Math.max(0.15, C.a / qd))
+    }
+    fwd[n - 1] = cap[n - 1]
+    for (let k = n - 2; k >= 0; k--) fwd[k] = Math.min(cap[k], Math.sqrt(fwd[k + 1] * fwd[k + 1] + 2 * ra[k] * G))
+    bwd[0] = cap[0]
+    for (let k = 1; k < n; k++) bwd[k] = Math.min(cap[k], Math.sqrt(bwd[k - 1] * bwd[k - 1] + 2 * ra[k] * G))
+    return { G, n, ra, fwd, bwd }
+  }
+
+  /**
+   * round 14 (calm): advance the displayed task time. Playing: toward `speed`, never above the profile; scrubbing: a
+   * trapezoid toward the scrub target (either way) under the same profile; paused: brakes to rest. The task-time velocity
+   * sv is carried across play / scrub / pause switches, so the arm never changes speed in one frame. Returns true when
+   * the task finished (handled).
+   */
+  _calmStep(dt, speed) {
+    const c = this.cur, plan = c.plan
+    if (!c.prof) c.prof = this._profile(plan, c.blend, c.blendDur)
+    const P = c.prof, k = Math.min(P.n - 1, Math.max(0, Math.round(this.t / P.G))), ra = P.ra[k]
+    let want
+    if (this.scrubTo !== null) {
+      const d = this.scrubTo - this.t
+      want = Math.abs(d) < 1e-4 ? 0 : Math.sign(d) * Math.min(d > 0 ? P.fwd[k] : P.bwd[k], Math.sqrt(2 * ra * Math.abs(d)))
+    } else if (this.paused) want = 0
+    else want = Math.min(Math.max(0, speed), P.fwd[k])
+    let v = this.sv
+    if (v > P.fwd[k]) v = P.fwd[k]; else if (v < -P.bwd[k]) v = -P.bwd[k] // the profile already braked toward this
+    v += Math.max(-ra * dt, Math.min(ra * dt, want - v))
+    let t = this.t + v * dt
+    if (this.scrubTo !== null && (this.scrubTo - this.t) * (this.scrubTo - t) <= 0 && Math.abs(v) <= Math.sqrt(2 * ra * 1e-3) + ra * dt) { t = this.scrubTo; v = 0 }
+    if (t < 0) { t = 0; v = Math.max(0, v) }
+    this.sv = v
+    if (this.scrubTo === null && !this.paused && t >= plan.duration) { this.t = plan.duration; this._finish(false); return true }
+    this.t = Math.min(t, plan.duration)
+    return false
+  }
+
+  /** round 14 (calm): lay the next job's noodle out while the arm glides to the start pose (the old one shrinks away). */
+  _preSpawn(plan) {
+    const nd = this.noodle, m = nd.mesh
+    if (!plan.cell || this.plans[plan.cell] !== plan) return false // a sandbox table point: its noodle grows in as before
+    if (m.visible && (nd.state === 'held' || nd.state === 'falling')) { // the cup case is spawnAt's own
+      m.getWorldPosition(nd.ghost.position); m.getWorldQuaternion(nd.ghost.quaternion)
+      nd.ghost.visible = true; nd.ghostT = 1
+      nd.state = 'hidden' // spawnAt below must not ghost it a second time
+    }
+    if (!(nd.state === 'table' && nd.cell === plan.cell)) nd.spawnAt(plan.cell, true)
+    return true
+  }
+
+  /** round 14 (calm): let the current task go where it is (any kind); the arm glides on from its velocity. */
+  dropTask() {
+    const c = this.cur
+    if (!c) return false
+    this.last = { plan: c.plan, blend: c.blend, blendDur: c.blendDur }
+    this.cur = null; this.paused = false; this.scrubTo = null; this.sv = 0 // qv (the joints' velocity) is kept: the glide carries it
+    c.resolve()
+    return true
+  }
+
+  /**
+   * round 14 (calm): the running LOOP task becomes an explicit (scrubbable) one where it is, same plan, same time, same
+   * velocity: the flight's B2 pick takes over the policies loop's own B2 pick instead of rewinding or restarting it.
+   */
+  adoptAuto() {
+    const c = this.cur
+    if (!c || !c.auto) return false
+    this.queue = this.queue.filter((j) => !j.auto)
+    c.auto = false
+    return true
   }
 
   /** End the active task: `cancel` resolves it immediately (a paused task replaced by a new one). */
@@ -401,6 +516,7 @@ export class ArmController {
     this.cur = null
     this.paused = false
     this.scrubTo = null
+    this.sv = 0
     if (!done.auto || cancel) this.qv.fill(0)
     this._apply()
     done.resolve()
@@ -413,7 +529,8 @@ export class ArmController {
     if (blend.every((v) => Math.abs(v) < 0.01)) blend = null
     // The glide-in lasts long enough that no joint moves faster than GLIDE_RATE (never shorter than the old 1.1 s).
     const blendDur = blend ? Math.max(1.1, 1.5 * Math.max(...blend.map(Math.abs)) / GLIDE_RATE) : 1.1
-    this.cur = { plan, resolve: job.resolve, auto: !!job.auto, blend, blendDur }
+    this.cur = { plan, resolve: job.resolve, auto: !!job.auto, blend, blendDur, pre: !!job.pre, tag: job.tag || null }
+    if (this.calm) { this.cur.prof = this._profile(plan, blend, blendDur); this.sv = 0 }
     this.t = 0
     this.paused = false
     this.scrubTo = null

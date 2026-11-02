@@ -70,6 +70,8 @@ export class DualBloomPass extends Pass {
     this.knee = 0.5
     this.levels = levels
     this.needsSwap = false
+    this.composite = true // false: leave the result in targets[0] for a later pass to add (fx.js merged pass)
+    this.onDown = null // (renderer, targets, scene) after the down chain, while every level still holds its filtered source (rays)
     this.targets = []
     this._w = 0; this._h = 0
     const mk = (defines) => new THREE.ShaderMaterial({
@@ -84,6 +86,10 @@ export class DualBloomPass extends Pass {
     this.quad = new FullScreenQuad(null)
     this.setSize(resolution.x * 2, resolution.y * 2)
   }
+
+  _f = (i) => lerp(FACTORS[i] ?? 0.2, 1.2 - (FACTORS[i] ?? 0.2), this.radius)
+  /** Gain the composite applies to targets[0] (the merged pass uses the same). */
+  get compositeGain() { return this.strength * this._f(0) }
 
   /** Bytes of GPU memory held by the chain (half-float RGBA). */
   get bytes() { return this.targets.reduce((n, t) => n + t.width * t.height * 8, 0) }
@@ -127,8 +133,9 @@ export class DualBloomPass extends Pass {
       u.uTexel.value.set(1 / T[i - 1].width, 1 / T[i - 1].height)
       renderer.setRenderTarget(T[i]); q.render(renderer)
     }
+    if (this.onDown) this.onDown(renderer, T, readBuffer)
     // upsample chain, accumulating level i+1 into level i with weight f(i+1)/f(i)
-    const f = (i) => lerp(FACTORS[i] ?? 0.2, 1.2 - (FACTORS[i] ?? 0.2), this.radius)
+    const f = this._f
     q.material = this.upMat
     for (let i = n - 2; i >= 0; i--) {
       const u = this.upMat.uniforms
@@ -137,11 +144,12 @@ export class DualBloomPass extends Pass {
       u.uGain.value = f(i + 1) / f(i)
       renderer.setRenderTarget(T[i]); q.render(renderer)
     }
+    if (!this.composite) { renderer.autoClear = oldAuto; return }
     // composite onto the scene
     const cu = this.compMat.uniforms
     cu.tSrc.value = T[0].texture
     cu.uTexel.value.set(1 / T[0].width, 1 / T[0].height)
-    cu.uGain.value = this.strength * f(0)
+    cu.uGain.value = this.compositeGain
     q.material = this.compMat
     renderer.setRenderTarget(this.renderToScreen ? null : readBuffer)
     q.render(renderer)

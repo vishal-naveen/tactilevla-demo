@@ -38,6 +38,8 @@ export function createGround(scene) {
   table.rotation.x = -Math.PI / 2
   table.position.set(0.5, TABLE_Y - 0.0015, 0.0)
   table.receiveShadow = true
+  table.name = 'table'
+  table.userData.bake = 'table' // Cycles bakes the static contact shading into its UVs (baked.js)
   table.renderOrder = -2
   group.add(table)
 
@@ -46,6 +48,7 @@ export function createGround(scene) {
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(4, 3.4).rotateX(-Math.PI / 2), shadowMat)
   shadow.position.set(0.4, TABLE_Y - 0.001, 0)
   shadow.receiveShadow = true
+  shadow.userData.aoReceiver = true // the AO pass treats it as the table top (fx.js)
   shadow.renderOrder = -1
   group.add(shadow)
 
@@ -69,6 +72,8 @@ export function createGround(scene) {
   const _p = new THREE.Vector3()
   return {
     group,
+    /** The table's Cycles-baked contact shading has landed (baked.js): drop the painted blobs it replaces (the noodle's stays). */
+    useBakedContact() { base.mesh.visible = false; cup.mesh.visible = false },
     applyTheme(tableColor, light) {
       tableMat.color.copy(tableColor)
       shadowMat.opacity = 0.22 + (0.34 - 0.22) * light // shadows carry the grounding on a bright set

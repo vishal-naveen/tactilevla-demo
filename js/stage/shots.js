@@ -67,6 +67,9 @@ export class CameraRig {
     // per-frame modifiers set by the stage: distance scale, fov delta, look-at pull toward a point
     this.mods = { scale: 1, fov: 0, lookTo: new THREE.Vector3(), lookK: 0 }
     this.intro = { k: 1, t: -1 } // k: 1 = pulled back, animates to 0 on reveal()
+    // Stage B: an authored pose the stage eases the camera onto, on top of everything above (the lane's macro dive, the
+    // close's return to the hero halo). k = 0 leaves the rig untouched; the caller owns k's easing (scroll or time).
+    this.ov = { k: 0, pos: new THREE.Vector3(), look: new THREE.Vector3(), fov: 30, dx: 0, dy: 0 }
   }
 
   setSubjects(subjects) { this.subjects = subjects; this.cache.clear() }
@@ -238,12 +241,18 @@ export class CameraRig {
       pos.addScaledVector(_r, this.pointerS.x * 0.028 * k)
       pos.y += this.pointerS.y * 0.016 * k
     }
+    let fov = s[6] + m.fov + INTRO_FOV * ik, dx = s[7], dy = s[8]
+    const ov = this.ov
+    if (ov.k > 0) {
+      pos.lerp(ov.pos, ov.k); look.lerp(ov.look, ov.k)
+      fov = lerp(fov, ov.fov, ov.k); dx = lerp(dx, ov.dx, ov.k); dy = lerp(dy, ov.dy, ov.k)
+    }
     if (write) {
       this.camera.position.copy(pos)
       this.camera.lookAt(look)
     }
-    this.camera.fov = s[6] + m.fov + INTRO_FOV * ik
-    this._applyOffset(s[7], s[8])
+    this.camera.fov = fov
+    this._applyOffset(dx, dy)
   }
 
   _applyOffset(dx, dy) {

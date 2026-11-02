@@ -24,8 +24,11 @@ export const MODES = {
   test: M({ shot: 'test', loop: 'test', speed: 0.9, line: 0.9, fill: 0.9, label: 1, dim: 1, pulse: 1, testLight: 1 }),
   results: M({ shot: 'results', loop: 'slow', speed: 0.6, line: 0.3, fill: 0.35, pulse: 0.15, exposure: 0.85, ambient: true }),
   film: M({ shot: 'film', loop: 'slow', speed: 0.6, line: 0.3, fill: 0.35, pulse: 0.15, exposure: 0.85, ambient: true }),
-  limits: M({ shot: 'limits', pose: 'rest', noodle: 'hidden', speed: 0.6, line: 0.22, fill: 0.25, pulse: 0.1, exposure: 0.85, ringFull: 1 }),
+  // limits is the sober beat: no full-ring chord here any more (Stage B moved it to the close, moments.js)
+  limits: M({ shot: 'limits', pose: 'rest', noodle: 'hidden', speed: 0.6, line: 0.22, fill: 0.25, pulse: 0.1, exposure: 0.85 }),
   touch: M({ shot: 'touch', pose: 'touch', noodle: 'held', line: 0.2, fill: 0.25, pulse: 0.1, heat: 1, kick: 1.5 }),
+  // "What I built" (page chapter 'results' inside the 'next' group): the close parks the arm at home facing the ring
+  built: M({ shot: 'hero', pose: 'home', noodle: 'hidden', speed: 0.6, line: 0.3, fill: 0.35, pulse: 0.15 }),
   sandbox: M({ shot: 'sandbox', pose: 'rest', noodle: 'hidden', speed: 0.85, line: 0.85, fill: 0.9, label: 1, pulse: 0.35, orbit: true, drift: false, gauges: true, phases: 'full' }),
 }
 

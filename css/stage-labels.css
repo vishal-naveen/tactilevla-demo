@@ -57,3 +57,9 @@ html[data-mode="light"] .stage-phase--active { color: var(--ivory); text-shadow:
   .stage-phase { font-size: 1.125rem; }
   .stage-label { font-size: 0.875rem; }
 }
+/* Stage B: the honesty tag beside the 3D at the B2 peak (stage/moments.js) */
+.stage-label--tag {
+  font-size: 0.625rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;
+  color: rgba(var(--ivory-rgb), 0.6); background: rgba(var(--veil-rgb), 0.45); padding: 0.26rem 0.5rem;
+  transition: none;
+}

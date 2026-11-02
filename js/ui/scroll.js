@@ -60,7 +60,8 @@ export function initScroll({ stage }) {
   if (!reduced) document.documentElement.classList.add('beats-on'); // reduced motion: beats read as plain paragraphs
   // What the stage should be showing right now; lets a late-arriving stage catch up (see resync).
   const state = { chapter: 'hero', progress: {}, ring: 0 };
-  const chapters = $$('main [data-chapter]').map((el) => ({ el, id: el.dataset.chapter, top: 0, bottom: 0 })); // document order = visual order
+  // group: the <section class="group"> a chapter sits in (the stage plays its hand-off transition between groups)
+  const chapters = $$('main [data-chapter]').map((el) => ({ el, id: el.dataset.chapter, group: el.closest('section.group')?.id || null, top: 0, bottom: 0 })); // document order = visual order
   const enter = (id) => { state.chapter = id; document.body.dataset.chapter = id; stage.setChapter(id); document.dispatchEvent(new CustomEvent('chapterchange', { detail: id })); };
 
   // Scrubbed chapters: stage progress plus any text that phases in with it. Progress = where the viewport is between the
@@ -137,6 +138,7 @@ export function initScroll({ stage }) {
     if (next !== active || force) {
       const changed = chapters[next].id !== state.chapter || force;
       active = next;
+      stage.setSection?.(chapters[next].group); // before setChapter: the stage picks the close's mode by group
       if (changed) enter(chapters[next].id);
     }
     for (const sc of scrubs) {
@@ -225,6 +227,7 @@ export function initScroll({ stage }) {
   const resync = () => {
     measure(); // fresh geometry first
     sendBlend(READ * innerHeight, innerHeight, true);
+    stage.setSection?.(chapters[active].group);
     stage.setChapter(state.chapter);
     scrubs.forEach((sc) => { if (!Number.isNaN(sc.last)) sc.apply(sc.last); });
     stage.setRingProgress(state.ring);

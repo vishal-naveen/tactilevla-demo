@@ -1,0 +1,30 @@
+/* Round 11 content (flight.html only): layouts owned by the CONTENT pass; css/flight.css stays the look+perf file. */
+
+/* grid labels printed on the table under the projected light: no pill, no blur, narrow uppercase like the HUD */
+.stage-label.stage-label--print {
+  background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; padding: 0;
+  font-stretch: 62%; font-weight: 650; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(var(--ivory-rgb), 0.78); text-shadow: 0 0 6px rgba(255, 236, 205, 0.35);
+}
+.stage-label.stage-label--print.stage-label--held { color: var(--held-text); text-shadow: 0 0 8px rgba(var(--held-rgb), 0.45); }
+
+/* 08 real runs, desktop: the reels are screens standing on the table; js/flight/props_runs.js sets each one's transform
+   (translate + scale from this laid-out 180 px width) every frame. The wrap no longer takes the pointer: only the screens do. */
+.fl-live.fl-reels3d #film.fls .strip-wrap { position: absolute; inset: 0; width: auto; height: auto; pointer-events: none; }
+.fl-live.fl-reels3d #film.fls .strip { display: block; }
+.fl-live.fl-reels3d #film.fls .reel { position: absolute; left: 0; top: 0; width: 180px; transform-origin: 0 0; pointer-events: auto; }
+.fl-live.fl-reels3d #film.fls .frame { border-radius: 2px; box-shadow: 0 0 0 1px rgba(var(--ivory-rgb), 0.12), 0 0 28px rgba(190, 210, 235, 0.16); }
+.fl-live.fl-reels3d #film.fls .reel figcaption { margin-top: 10px; justify-content: center; background: none; padding: 0; font-size: 12px; }
+.fl-live.fl-reels3d #film.fls .reel-play { width: 46px; height: 46px; }
+
+/* Round 14, 08 real runs: each screen says policy, cell + training status (the existing caption) and its result; the
+   screen in focus (props_runs.js) gets the brighter, solid leader and a lit frame. Leaders draw on in scenes.js. */
+.reel figcaption .fl-res { flex-basis: 100%; font: var(--mono-f); font-stretch: 62%; font-size: 10.5px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(var(--noodle-rgb), 0.9); }
+.fl-live.fl-reels3d #film.fls .reel figcaption { flex-direction: column; gap: 5px; text-align: center; line-height: 1.2; }
+.fl-live.fl-reels3d #film.fls .reel figcaption .fl-res { flex-basis: auto; }
+.fl-live.fl-reels3d #film.fls .reel .frame { transition: box-shadow 0.35s ease; }
+.fl-live.fl-reels3d #film.fls .reel.is-runfocus { z-index: 2; }
+.fl-live.fl-reels3d #film.fls .reel.is-runfocus .frame { box-shadow: 0 0 0 1px rgba(var(--noodle-rgb), 0.55), 0 0 34px rgba(var(--noodle-rgb), 0.22); }
+.fl-pins .reels path.is-focus { stroke: rgba(var(--noodle-rgb), 0.85); stroke-dasharray: none; stroke-width: 1.25; }
+.fl-pins .reels circle.is-focus { fill: rgb(var(--noodle-rgb)); }
